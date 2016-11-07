@@ -20,45 +20,26 @@
 package de.khive.examples.elevator
 
 import akka.actor.{ActorSystem, Props}
-import de.khive.examples.elevator.services.ElevatorDispatcher
+import de.khive.examples.elevator.model.consoleinterface._
+import de.khive.examples.elevator.services.{ConsoleInterface, ElevatorDispatcher}
 import org.slf4j.LoggerFactory
 
 /**
-  * Created by ceth on 04.11.16.
+  * Elevator Example Application
+  *
+  * This class is startable by 'java -jar ...'
+  *
+  * Created by ceth on 09.11.16.
   */
 object ElevatorApplication extends App {
 
   private val log = LoggerFactory.getLogger(getClass)
 
-  //val config = getConfig()
-  val config = Option(Config(5,1))
-
-  if(config.isEmpty) throw new IllegalStateException("Config is empty.")
-
+  val config = ElevatorApplicationConfig.fromArgs(args)
   val system = ActorSystem("example-elevator")
-  val elevatorDispatcher = system.actorOf(Props(new ElevatorDispatcher(config.get)))
 
-  /**
-    * Helper: parse command line args into [[Config]]
-    *
-    * @return Option[Config]
-    */
-  private def getConfig(): Option[Config] = {
-    val parser = new scopt.OptionParser[Config]("example-elevator") {
-      head("example-elevator", "1.0")
-
-      opt[Int]('f', "floorCount").required().action( (x, c) =>
-        c.copy(floorCount = x) ).text("floorCount is an integer property")
-      opt[Int]('e', "elevatorCount").required().action( (x, c) =>
-        c.copy(elevatorCount = x) ).text("elevatorCount is an integer property")
-    }
-
-    parser.parse(args, Config()) match {
-      case Some(config) => Option(config)
-      case None => {
-        None
-      }
-    }
-  }
+  lazy val elevatorDispatcher = system.actorOf(Props(new ElevatorDispatcher(config)))
+  lazy val consoleInterface = system.actorOf(ConsoleInterface.props)
+  consoleInterface ! EnableConsoleInput
 
 }

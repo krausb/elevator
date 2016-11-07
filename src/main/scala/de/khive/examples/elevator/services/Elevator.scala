@@ -19,52 +19,66 @@
 
 package de.khive.examples.elevator.services
 
-import akka.actor.{ActorRef, FSM}
+import akka.actor.FSM
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
 import scala.concurrent.duration._
 
+import de.khive.examples.elevator.model.elevator._
+
 /**
   * Finite State Machine: Elevator
   *
-  * Created by ceth on 04.11.16.
+  * Created by ceth on 09.11.16.
   */
 class Elevator(id: Int, minLevel: Int, maxLevel: Int) extends FSM[MotionState, CurrentState] {
 
   val logger = LoggerFactory.getLogger(getClass)
 
-  private val upQueue = mutable.Queue[FloorRequest]()
-  private val downQueue = mutable.Queue[FloorRequest]()
+  private var upQueue = mutable.Queue[FloorRequest]()
+  private var downQueue = mutable.Queue[FloorRequest]()
 
   // configure the FSM
   startWith(Idle, CurrentState(0, Idle))
 
   when(Idle) {
-    case Event(Initialize(floor),_) => stay using CurrentState(0, Idle)
     case Event(EnqueueFloor(request),_) => {
+      logTransition("Idle")
+      log.info(s"Enqueue request: ${request}")
       enqueueFloor(request)
       stay using stateData
     }
-    case Event(NextQueue(),_) => processQueue(Idle)
-    case _ => stay using stateData
+    case Event(NextQueue,_) => processQueue(Idle)
   }
 
   when(MovingUp) {
     case Event(EnqueueFloor(request),_) => {
+      logTransition("MovingUp")
+      log.info(s"Enqueue request: ${request}")
       enqueueFloor(request)
       stay using stateData
     }
-    case Event(NextQueue(),_) => processQueue(MovingUp)
-    case _ => stay using stateData
+    case Event(NextQueue,_) => processQueue(MovingUp)
   }
 
   when(MovingDown) {
     case Event(EnqueueFloor(request),_) => {
+      logTransition("MovingDown")
+      log.info(s"Enqueue request: ${request}")
       enqueueFloor(request)
       stay using stateData
     }
-    case Event(NextQueue(),_) => processQueue(MovingDown)
+    case Event(NextQueue,_) => processQueue(MovingDown)
+  }
+
+  whenUnhandled {
+    case Event(Initialize(floor),_) => stay using CurrentState(0, Idle)
+    case Event(GetConfig, _) => {
+      logger.info("Received GetConfig request...")
+      sender ! ElevatorConfig(id, stateData)
+      stay using stateData
+    }
     case _ => stay using stateData
   }
 
@@ -76,14 +90,13 @@ class Elevator(id: Int, minLevel: Int, maxLevel: Int) extends FSM[MotionState, C
     case MovingDown -> MovingDown => logTransition("MovingDown -> MovingDown")
     case MovingDown -> MovingUp => logTransition("MovingDown -> MovingUp")
     case MovingDown -> Idle => logTransition("MovingDown -> Idle")
-    case Idle -> Idle => logTransition("Idle -> Idle")
   }
 
   initialize()
 
   // finally start queue worker schedule
   import scala.concurrent.ExecutionContext.Implicits.global
-  context.system.scheduler.schedule(10 seconds, 10 seconds, self, NextQueue)(global)
+  context.system.scheduler.schedule(10 seconds, 5 seconds, self, NextQueue)(global)
 
   private def logTransition(transition: String): Unit = {
     log.info(s"${transition} - current floor: ${stateData.floor} UpQueue: ${upQueue} - DownQueue: ${downQueue}")
@@ -92,14 +105,18 @@ class Elevator(id: Int, minLevel: Int, maxLevel: Int) extends FSM[MotionState, C
   private def enqueueFloor(request: FloorRequest): Unit = {
     if(request.floor == stateData.floor) {
       request.ref ! BoardingNotification(id, stateData.floor)
-    } else if(request.floor > stateData.floor) {
+    } else if(request.floor > stateData.floor && !upQueue.contains(request)) {
       upQueue.enqueue(request)
-    } else {
+      upQueue = upQueue.sortWith((left, right) => left.floor < right.floor)
+    } else if(!downQueue.contains(request)) {
       downQueue.enqueue(request)
+      downQueue = downQueue.sortWith((left, right) => left.floor > right.floor)
     }
   }
 
   private def processQueue(currentMotion: MotionState): State = {
+    log.info(s"Processing queue (id: ${id}) ...")
+    logTransition(s"ID: ${id} - ${currentMotion}")
     currentMotion match {
       case MovingUp => moveUp()
       case MovingDown => moveDown()
@@ -162,19 +179,3 @@ class Elevator(id: Int, minLevel: Int, maxLevel: Int) extends FSM[MotionState, C
   def getId: Int = id
 
 }
-
-sealed trait ElevatorCommand
-case class Initialize(floor: Int) extends ElevatorCommand
-case class EnqueueFloor(request: FloorRequest) extends ElevatorCommand
-case class NextQueue() extends ElevatorCommand
-
-sealed trait MotionState
-case object Idle extends MotionState
-case object MovingUp extends MotionState
-case object MovingDown extends MotionState
-
-sealed trait ElevatorData
-case class CurrentState(floor: Int, motion: MotionState) extends ElevatorData
-case class FloorRequest(floor: Int, ref: ActorRef) extends ElevatorData
-case class BoardingNotification(elevatorId: Int, floor: Int) extends ElevatorData
-case class FloorRequestError(elevatorId: Int, msg: String) extends ElevatorData
