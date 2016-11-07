@@ -4,7 +4,7 @@
 		module="example-elevator_2.11"
 		revision="1.0"
 		status="integration"
-		publication="20161104215152"
+		publication="20161107090521"
 	>
 		<license name="GNU General Public License (GPL), Version 3.0" url="http://opensource.org/licenses/GPL-3.0" />
 		<description homepage="https://bitbucket.org/ceth/example-reactive-elevator">

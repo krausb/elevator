@@ -20,22 +20,28 @@
 package de.khive.examples.elevator.services
 
 import akka.actor.{Actor, Props}
+import akka.util.Timeout
 import de.khive.examples.elevator.ElevatorApplication
 import de.khive.examples.elevator.model.consoleinterface._
 import de.khive.examples.elevator.model.elevator._
 import de.khive.examples.elevator.model.elevatordispatcher._
 import org.slf4j.LoggerFactory
 
+import scala.concurrent.Await
+import scala.concurrent.duration._
+
 /**
+  * Console User Interface Actor
   *
+  * Takes user input, parses the given commands and tells it to [[ElevatorDispatcher]]
   *
-  * Maintainer: BFFT Gesellschaft fuer Fahrzeugtechnik mbH
-  * Created by: <a href="mailto:bastian.kraus@bfft.de">Bastian Kraus</a>
-  * Created on: 07.11.2016
+  * Created by ceth on 09.11.16.
   */
 class ConsoleInterface extends Actor {
 
   val log = LoggerFactory.getLogger(getClass)
+
+  implicit val timeout = Timeout(5 seconds)
 
   def receive: Receive = {
     case EnableConsoleInput => userInput()
@@ -43,25 +49,26 @@ class ConsoleInterface extends Actor {
   }
 
   def userInput(): Unit = {
-    Console.println(
-      """Enter command:
-        | Possible Motions:
-        | -> up
-        | -> down
-        | Possible Commands:
-        | -> call <yourFloorNumber> <motion> (call an elevator to your floor)
-        | -> move <elevatorId> <targetFloorNumber> (request to move you to a target floor)
-        | -> exit (quit elevator control!)
-      """)
+    printHelp()
     for(ln <- io.Source.stdin.getLines.takeWhile(!_.equals("exit"))) {
       log.info(s"Command given: ${ln}")
-      if(parseCommand(ln)) {
-        Console.println("Command accepted!")
-      } else {
-        Console.println(s"Error with given command: ${ln}")
+      try {
+        if(parseCommand(ln)) {
+          Console.println("Command accepted!")
+        } else {
+          Console.println(s"Error with given command: ${ln}")
+        }
+      } catch {
+        case e: Exception => log.error(e.getMessage, e)
       }
     }
 
+    Console.println("Application shutdown (takes about 5 seconds) ... ")
+    val result = context.system.terminate()
+    Await.result(result, Timeout(5 seconds).duration)
+
+    Console.println("Exiting... bye :-)")
+    System.exit(0)
   }
 
   def parseCommand(cmd: String): Boolean = {
@@ -76,13 +83,12 @@ class ConsoleInterface extends Actor {
           ElevatorApplication.elevatorDispatcher ! MoveToFloorButtonPressed(rest.head.toString.toInt, rest(1).toString.toInt)
           true
         }
-        case "quit" :: rest => {
-          log.info("Exiting... bye :-)")
-          System.exit(0)
+        case "help" :: rest => {
+          printHelp()
           true
         }
         case _ => {
-          log.info(s"Unrecognized command: ${cmd}")
+          Console.println(s"Unrecognized command: ${cmd}")
           false
         }
       }
@@ -100,6 +106,20 @@ class ConsoleInterface extends Actor {
       case str if motionString == "down" => MovingDown
       case _ => throw new IllegalArgumentException(s"Illegal motion: ${motionString}")
     }
+  }
+
+  def printHelp(): Unit = {
+    Console.println(
+      """Enter command:
+        | Possible Motions:
+        | -> up
+        | -> down
+        | Possible Commands:
+        | -> call <yourFloorNumber> <motion> (call an elevator to your floor)
+        | -> move <elevatorId> <targetFloorNumber> (request to move you to a target floor)
+        | -> help (print this peace of text :-)
+        | -> exit (quit elevator control!)
+      """)
   }
 
 }

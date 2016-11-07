@@ -36,7 +36,7 @@ import scala.concurrent.duration._
   * The [[Elevator]] Dispatcher is responsable for delegating service requests
   * to the registered elevators.
   *
-  * Created by ceth on 05.11.16.
+  * Created by ceth on 09.11.16.
   */
 class ElevatorDispatcher(config: ElevatorApplicationConfig) extends Actor {
 

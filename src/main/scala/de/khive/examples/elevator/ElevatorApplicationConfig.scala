@@ -19,9 +19,47 @@
 
 package de.khive.examples.elevator
 
+import com.typesafe.config.ConfigFactory
+
 /**
-  * [[de.khive.examples.elevator.ElevatorApplication]] configuration case class
-  *
-  * Created by ceth on 04.11.16.
+  * Elevator Application Configuration Provider
   */
+object ElevatorApplicationConfig {
+
+  /**
+    * Create [[ElevatorApplicationConfig]] from internal application.conf file.
+    *
+    * @return Option[ElevatorApplicationConfig]
+    */
+   def fromConfiguration(): ElevatorApplicationConfig = {
+    val config = ConfigFactory.load()
+    ElevatorApplicationConfig(config.getInt("elevator.floorCount"), config.getInt("elevator.elevatorCount"))
+  }
+
+  /**
+    * Parse command line args into [[ElevatorApplicationConfig]]
+    *
+    * @return Option[ElevatorApplicationConfig]
+    */
+  def fromArgs(args: Array[String]): ElevatorApplicationConfig = {
+    val parser = new scopt.OptionParser[ElevatorApplicationConfig]("example-elevator") {
+      head("example-elevator", "1.0")
+
+      opt[Int]('f', "floorCount").required().action( (x, c) =>
+        c.copy(floorCount = x) ).text("floorCount is an integer property")
+      opt[Int]('e', "elevatorCount").required().action( (x, c) =>
+        c.copy(elevatorCount = x) ).text("elevatorCount is an integer property")
+    }
+
+    parser.parse(args, ElevatorApplicationConfig()) match {
+      case Some(config) => config
+      case None => {
+        Console.println("Using application.conf file Configuration...")
+        fromConfiguration()
+      }
+    }
+  }
+
+}
+
 case class ElevatorApplicationConfig(floorCount: Int = -1, elevatorCount: Int = -1)

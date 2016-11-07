@@ -30,7 +30,7 @@ import de.khive.examples.elevator.model.elevator._
 /**
   * Finite State Machine: Elevator
   *
-  * Created by ceth on 04.11.16.
+  * Created by ceth on 09.11.16.
   */
 class Elevator(id: Int, minLevel: Int, maxLevel: Int) extends FSM[MotionState, CurrentState] {
 

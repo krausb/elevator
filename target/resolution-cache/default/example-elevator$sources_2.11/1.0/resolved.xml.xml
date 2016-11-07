@@ -4,7 +4,7 @@
 		module="example-elevator$sources_2.11"
 		revision="1.0"
 		status="integration"
-		publication="20161104215154"
+		publication="20161107090534"
 	/>
 	<configurations>
 		<conf name="compile" visibility="public" description=""/>

@@ -10,6 +10,7 @@
 [debug] == resolving dependencies default#example-elevator$sbt_2.11;1.0->org.scala-sbt#sbt;0.13.8 [default->default(compile)]
 [info] Resolving org.scala-sbt#sbt;0.13.8 ...
 [debug] sbt-chain: Checking cache for: dependency: org.scala-sbt#sbt;0.13.8 {default=[default(compile)]}
+[debug] no default cache defined: set to C:\Users\krausba\.ivy2\cache
 [debug] sbt-chain: module revision found in cache: org.scala-sbt#sbt;0.13.8
 [debug] 	found org.scala-sbt#sbt;0.13.8 in sbt-chain
 [debug] == resolving dependencies org.scala-sbt#sbt;0.13.8->org.scala-lang#scala-library;2.10.4 [compile->default(compile)]
@@ -2220,9 +2221,9 @@
 [debug] 	[NOT REQUIRED] org.scala-sbt#apply-macro;0.13.8!apply-macro.jar
 [debug] 	[NOT REQUIRED] org.scala-lang#scala-library;2.10.6!scala-library.jar
 [debug] 	[NOT REQUIRED] org.jboss.interceptor#jboss-interceptor-api;1.1!jboss-interceptor-api.jar
-[debug] :: resolution report :: resolve 781ms :: artifacts dl 21ms
-[debug] 	report for default#example-elevator$sbt_2.11;1.0 default produced in /home/ceth/workspaces/examples/example-elevator/target/resolution-cache/reports/default-example-elevator$sbt_2.11-default.xml
-[debug] 	resolve done (781ms resolve - 21ms download)
+[debug] :: resolution report :: resolve 1551ms :: artifacts dl 126ms
+[debug] 	report for default#example-elevator$sbt_2.11;1.0 default produced in C:\work\scala\example-elevator\target\resolution-cache\reports\default-example-elevator$sbt_2.11-default.xml
+[debug] 	resolve done (1551ms resolve - 126ms download)
 [debug] Using inline dependencies specified in Scala.
 [debug] :: resolving dependencies :: default#example-elevator$sources_2.11;1.0
 [debug] 	confs: [default]
@@ -3125,8 +3126,30 @@
 [debug] 	[NOT REQUIRED] org.scala-sbt#precompiled-2_8_2;0.13.8!precompiled-2_8_2.jar(src)
 [debug] 	[NOT REQUIRED] org.scala-sbt#precompiled-2_9_2;0.13.8!precompiled-2_9_2.jar(src)
 [debug] 	[NOT REQUIRED] org.scala-sbt#precompiled-2_9_3;0.13.8!precompiled-2_9_3.jar(src)
-[debug] 	[NOT REQUIRED] org.scoverage#sbt-scoverage;1.4.0!sbt-scoverage.jar(src)
-[debug] 	[NOT REQUIRED] org.scoverage#scalac-scoverage-plugin_2.10;1.2.0!scalac-scoverage-plugin_2.10.jar(src)
+[debug] 		tried https://repo.typesafe.com/typesafe/ivy-releases/org.scoverage/sbt-scoverage/scala_2.10/sbt_0.13/1.4.0/srcs/sbt-scoverage-sources.jar
+[debug] CLIENT ERROR: Not Found url=https://repo.typesafe.com/typesafe/ivy-releases/org.scoverage/sbt-scoverage/scala_2.10/sbt_0.13/1.4.0/srcs/sbt-scoverage-sources.jar
+[debug] 		tried https://repo.scala-sbt.org/scalasbt/sbt-plugin-releases/org.scoverage/sbt-scoverage/scala_2.10/sbt_0.13/1.4.0/srcs/sbt-scoverage-sources.jar
+[debug] CLIENT ERROR: Not Found url=https://repo.scala-sbt.org/scalasbt/sbt-plugin-releases/org.scoverage/sbt-scoverage/scala_2.10/sbt_0.13/1.4.0/srcs/sbt-scoverage-sources.jar
+[debug] 		tried C:\Users\krausba\.ivy2\local\org.scoverage\sbt-scoverage\scala_2.10\sbt_0.13\1.4.0\srcs\sbt-scoverage-sources.jar
+[debug] 		tried https://jcenter.bintray.com/org/scoverage/sbt-scoverage_2.10_0.13/1.4.0/sbt-scoverage-1.4.0-sources.jar
+[debug] CLIENT ERROR: Not Found url=https://jcenter.bintray.com/org/scoverage/sbt-scoverage_2.10_0.13/1.4.0/sbt-scoverage-1.4.0-sources.jar
+[debug] 		tried https://repo1.maven.org/maven2/org/scoverage/sbt-scoverage_2.10_0.13/1.4.0/sbt-scoverage-1.4.0-sources.jar
+[info] downloading https://repo1.maven.org/maven2/org/scoverage/sbt-scoverage_2.10_0.13/1.4.0/sbt-scoverage-1.4.0-sources.jar ...
+[debug] 	public: downloading https://repo1.maven.org/maven2/org/scoverage/sbt-scoverage_2.10_0.13/1.4.0/sbt-scoverage-1.4.0-sources.jar
+[debug] 	public: downloading https://repo1.maven.org/maven2/org/scoverage/sbt-scoverage_2.10_0.13/1.4.0/sbt-scoverage-1.4.0-sources.jar.sha1
+[debug] sha1 OK for https://repo1.maven.org/maven2/org/scoverage/sbt-scoverage_2.10_0.13/1.4.0/sbt-scoverage-1.4.0-sources.jar
+[info] 	[SUCCESSFUL ] org.scoverage#sbt-scoverage;1.4.0!sbt-scoverage.jar(src) (194ms)
+[debug] 		tried https://repo.typesafe.com/typesafe/ivy-releases/org.scoverage/scalac-scoverage-plugin_2.10/1.2.0/srcs/scalac-scoverage-plugin_2.10-sources.jar
+[debug] CLIENT ERROR: Not Found url=https://repo.typesafe.com/typesafe/ivy-releases/org.scoverage/scalac-scoverage-plugin_2.10/1.2.0/srcs/scalac-scoverage-plugin_2.10-sources.jar
+[debug] 		tried https://repo.scala-sbt.org/scalasbt/sbt-plugin-releases/org.scoverage/scalac-scoverage-plugin_2.10/1.2.0/srcs/scalac-scoverage-plugin_2.10-sources.jar
+[debug] CLIENT ERROR: Not Found url=https://repo.scala-sbt.org/scalasbt/sbt-plugin-releases/org.scoverage/scalac-scoverage-plugin_2.10/1.2.0/srcs/scalac-scoverage-plugin_2.10-sources.jar
+[debug] 		tried C:\Users\krausba\.ivy2\local\org.scoverage\scalac-scoverage-plugin_2.10\1.2.0\srcs\scalac-scoverage-plugin_2.10-sources.jar
+[debug] 		tried https://jcenter.bintray.com/org/scoverage/scalac-scoverage-plugin_2.10/1.2.0/scalac-scoverage-plugin_2.10-1.2.0-sources.jar
+[info] downloading https://jcenter.bintray.com/org/scoverage/scalac-scoverage-plugin_2.10/1.2.0/scalac-scoverage-plugin_2.10-1.2.0-sources.jar ...
+[debug] 	jcenter: downloading https://jcenter.bintray.com/org/scoverage/scalac-scoverage-plugin_2.10/1.2.0/scalac-scoverage-plugin_2.10-1.2.0-sources.jar
+[debug] 	jcenter: downloading https://jcenter.bintray.com/org/scoverage/scalac-scoverage-plugin_2.10/1.2.0/scalac-scoverage-plugin_2.10-1.2.0-sources.jar.sha1
+[debug] sha1 OK for https://jcenter.bintray.com/org/scoverage/scalac-scoverage-plugin_2.10/1.2.0/scalac-scoverage-plugin_2.10-1.2.0-sources.jar
+[info] 	[SUCCESSFUL ] org.scoverage#scalac-scoverage-plugin_2.10;1.2.0!scalac-scoverage-plugin_2.10.jar(src) (173ms)
 [debug] 	[NOT REQUIRED] org.scala-lang#scala-library;2.10.6!scala-library.jar(src)
 [debug] 	[NOT REQUIRED] com.orrsella#sbt-stats;1.0.5!sbt-stats.jar(src)
 [debug] 	[NOT REQUIRED] com.typesafe.sbt#sbt-git;0.8.5!sbt-git.jar(src)
@@ -3190,11 +3213,23 @@
 [debug] 	[NOT REQUIRED] org.scalastyle#scalastyle-sbt-plugin;0.8.0!scalastyle-sbt-plugin.jar(src)
 [debug] 	[NOT REQUIRED] org.scalastyle#scalastyle_2.10;0.8.0!scalastyle_2.10.jar(src)
 [debug] 	[NOT REQUIRED] com.typesafe#config;1.2.0!config.jar(src)
-[debug] 	[NOT REQUIRED] org.wartremover#sbt-wartremover;1.1.1!sbt-wartremover.jar(src)
+[debug] 		tried https://repo.typesafe.com/typesafe/ivy-releases/org.wartremover/sbt-wartremover/scala_2.10/sbt_0.13/1.1.1/srcs/sbt-wartremover-sources.jar
+[debug] CLIENT ERROR: Not Found url=https://repo.typesafe.com/typesafe/ivy-releases/org.wartremover/sbt-wartremover/scala_2.10/sbt_0.13/1.1.1/srcs/sbt-wartremover-sources.jar
+[debug] 		tried https://repo.scala-sbt.org/scalasbt/sbt-plugin-releases/org.wartremover/sbt-wartremover/scala_2.10/sbt_0.13/1.1.1/srcs/sbt-wartremover-sources.jar
+[debug] CLIENT ERROR: Not Found url=https://repo.scala-sbt.org/scalasbt/sbt-plugin-releases/org.wartremover/sbt-wartremover/scala_2.10/sbt_0.13/1.1.1/srcs/sbt-wartremover-sources.jar
+[debug] 		tried C:\Users\krausba\.ivy2\local\org.wartremover\sbt-wartremover\scala_2.10\sbt_0.13\1.1.1\srcs\sbt-wartremover-sources.jar
+[debug] 		tried https://jcenter.bintray.com/org/wartremover/sbt-wartremover_2.10_0.13/1.1.1/sbt-wartremover-1.1.1-sources.jar
+[debug] CLIENT ERROR: Not Found url=https://jcenter.bintray.com/org/wartremover/sbt-wartremover_2.10_0.13/1.1.1/sbt-wartremover-1.1.1-sources.jar
+[debug] 		tried https://repo1.maven.org/maven2/org/wartremover/sbt-wartremover_2.10_0.13/1.1.1/sbt-wartremover-1.1.1-sources.jar
+[info] downloading https://repo1.maven.org/maven2/org/wartremover/sbt-wartremover_2.10_0.13/1.1.1/sbt-wartremover-1.1.1-sources.jar ...
+[debug] 	public: downloading https://repo1.maven.org/maven2/org/wartremover/sbt-wartremover_2.10_0.13/1.1.1/sbt-wartremover-1.1.1-sources.jar
+[debug] 	public: downloading https://repo1.maven.org/maven2/org/wartremover/sbt-wartremover_2.10_0.13/1.1.1/sbt-wartremover-1.1.1-sources.jar.sha1
+[debug] sha1 OK for https://repo1.maven.org/maven2/org/wartremover/sbt-wartremover_2.10_0.13/1.1.1/sbt-wartremover-1.1.1-sources.jar
+[info] 	[SUCCESSFUL ] org.wartremover#sbt-wartremover;1.1.1!sbt-wartremover.jar(src) (132ms)
 [debug] 	[NOT REQUIRED] com.github.mpeltonen#sbt-idea;1.6.0!sbt-idea.jar(src)
 [debug] 	[NOT REQUIRED] commons-io#commons-io;2.0.1!commons-io.jar(src)
 [debug] 	[NOT REQUIRED] com.typesafe.sbt#sbt-license-report;1.2.0!sbt-license-report.jar(src)
 [debug] 	[NOT REQUIRED] org.apache.commons#commons-lang3;3.1!commons-lang3.jar(src)
-[debug] :: resolution report :: resolve 177ms :: artifacts dl 22ms
-[debug] 	report for default#example-elevator$sources_2.11;1.0 default produced in /home/ceth/workspaces/examples/example-elevator/target/resolution-cache/reports/default-example-elevator$sources_2.11-default.xml
-[debug] 	resolve done (177ms resolve - 22ms download)
+[debug] :: resolution report :: resolve 386ms :: artifacts dl 2974ms
+[debug] 	report for default#example-elevator$sources_2.11;1.0 default produced in C:\work\scala\example-elevator\target\resolution-cache\reports\default-example-elevator$sources_2.11-default.xml
+[debug] 	resolve done (386ms resolve - 2974ms download)

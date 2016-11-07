@@ -4,7 +4,7 @@
 		module="example-elevator-build"
 		revision="0.1-SNAPSHOT"
 		status="integration"
-		publication="20161104213403"
+		publication="20161107090449"
 		e:sbtVersion="0.13" e:scalaVersion="2.10"
 	>
 		<description>
