@@ -24,4 +24,4 @@ package de.khive.examples.elevator
   *
   * Created by ceth on 04.11.16.
   */
-case class Config(floorCount: Int = -1, elevatorCount: Int = -1)
+case class ElevatorApplicationConfig(floorCount: Int = -1, elevatorCount: Int = -1)

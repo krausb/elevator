@@ -20,7 +20,7 @@
 package de.khive.examples.elevator
 
 import akka.actor.{ActorSystem, Props}
-import de.khive.examples.elevator.services.ElevatorDispatcher
+import de.khive.examples.elevator.services.{EnableConsoleInput, ConsoleInterface, ElevatorDispatcher}
 import org.slf4j.LoggerFactory
 
 /**
@@ -31,20 +31,22 @@ object ElevatorApplication extends App {
   private val log = LoggerFactory.getLogger(getClass)
 
   //val config = getConfig()
-  val config = Option(Config(5,1))
+  val config = Option(ElevatorApplicationConfig(5,1))
 
   if(config.isEmpty) throw new IllegalStateException("Config is empty.")
 
   val system = ActorSystem("example-elevator")
-  val elevatorDispatcher = system.actorOf(Props(new ElevatorDispatcher(config.get)))
+  lazy val elevatorDispatcher = system.actorOf(Props(new ElevatorDispatcher(config.get)))
+  lazy val consoleInterface = system.actorOf(ConsoleInterface.props)
+  consoleInterface ! EnableConsoleInput
 
   /**
-    * Helper: parse command line args into [[Config]]
+    * Helper: parse command line args into [[ElevatorApplicationConfig]]
     *
     * @return Option[Config]
     */
-  private def getConfig(): Option[Config] = {
-    val parser = new scopt.OptionParser[Config]("example-elevator") {
+  private def getConfig(): Option[ElevatorApplicationConfig] = {
+    val parser = new scopt.OptionParser[ElevatorApplicationConfig]("example-elevator") {
       head("example-elevator", "1.0")
 
       opt[Int]('f', "floorCount").required().action( (x, c) =>
@@ -53,7 +55,7 @@ object ElevatorApplication extends App {
         c.copy(elevatorCount = x) ).text("elevatorCount is an integer property")
     }
 
-    parser.parse(args, Config()) match {
+    parser.parse(args, ElevatorApplicationConfig()) match {
       case Some(config) => Option(config)
       case None => {
         None

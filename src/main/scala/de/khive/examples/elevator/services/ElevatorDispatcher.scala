@@ -19,11 +19,16 @@
 
 package de.khive.examples.elevator.services
 
-import akka.actor.{Actor, Props}
-import de.khive.examples.elevator.Config
+import akka.actor.{ActorRef, Props, Actor}
+import akka.pattern.ask
+import akka.util.Timeout
+
+import de.khive.examples.elevator.ElevatorApplicationConfig
 import org.slf4j.LoggerFactory
 
+import scala.concurrent.Await
 import scala.util.Random
+import scala.concurrent.duration._
 
 /**
   * The [[Elevator]] Dispatcher is responsable for delegating service requests
@@ -31,44 +36,65 @@ import scala.util.Random
   *
   * Created by ceth on 05.11.16.
   */
-class ElevatorDispatcher(config: Config) extends Actor {
+class ElevatorDispatcher(config: ElevatorApplicationConfig) extends Actor {
 
   var log = LoggerFactory.getLogger(getClass)
+
+  implicit val timeout = Timeout(5 seconds)
 
   // initialize requested amount of elevators
   val elevators = for {
     eId <- 0 until config.elevatorCount
-  } yield context.actorOf(Props(new Elevator(eId, 0, config.floorCount))).asInstanceOf[Elevator]
-
-  elevators.foreach(e => e.self ! Initialize(0))
+  } yield {
+    val elevator = context.actorOf(Props(new Elevator(eId, 0, config.floorCount)))
+    elevator ! Initialize(0)
+    elevator
+  }
 
   override def receive: Receive = {
-    case CallElevatorButtonPressed(sourceFloor, motion) =>
+    case c@CallElevatorButtonPressed(sourceFloor, motion) => {
+      log.info(s"Received ${c} ...")
       enqueueElevatorCall(sourceFloor, motion)
-    case MoveToFloorButtonPressed(elevatorId, targetFloor) =>
-      elevators.filter(e => e.getId == elevatorId)(0).self ! EnqueueFloor(FloorRequest(targetFloor, self))
-    case BoardingNotification(elevatorId,floor) =>
+    }
+    case m@MoveToFloorButtonPressed(elevatorId, targetFloor) =>
+      log.info(s"Received ${m} ...")
+      elevators.filter(e => {
+        val rFuture = e ? GetConfig
+        val result = Await.result(rFuture, timeout.duration).asInstanceOf[ElevatorConfig]
+        if(result.elevatorId == elevatorId) true else false
+      }).foreach(e => e ! EnqueueFloor(FloorRequest(targetFloor, self)))
+    case b@BoardingNotification(elevatorId,floor) =>
+      log.info(s"Received ${b} ...")
       log.info(s"(BING) Boarding available for elevator ${elevatorId} on floor ${floor}")
   }
 
   def enqueueElevatorCall(floor: Int, motion: MotionState): Unit = {
     val availableElevators = elevators.filter(getMotionSelector(floor, motion))
-    val targetElevator = if(availableElevators.nonEmpty) Random.shuffle(availableElevators).head.self else Random.shuffle(elevators).head.self
+    val targetElevator = if(availableElevators.nonEmpty) Random.shuffle(availableElevators).head else Random.shuffle(elevators).head
+    log.info(s"Selected elevator to send to ${floor} with motion ${motion}: ${targetElevator}")
     targetElevator ! EnqueueFloor(FloorRequest(floor, self))
   }
 
-  def getMotionSelector(floor: Int, motion: MotionState): Elevator => Boolean =
+  def getMotionSelector(floor: Int, motion: MotionState)(implicit timeout: Timeout): ActorRef => Boolean =
     motion match {
-      case MovingUp =>
-        (e) => e.stateData.motion.eq(Idle) ||
-          (e.stateData.motion.eq(MovingUp) && e.stateData.floor < floor) ||
-          (e.stateData.motion.eq(MovingDown))
-      case MovingDown =>
-        (e) => e.stateData.motion.eq(Idle) ||
-          (e.stateData.motion.eq(MovingDown) && e.stateData.floor > floor) ||
-          (e.stateData.motion.eq(MovingUp))
-      case _ => throw new IllegalArgumentException(s"Motion selector for motion '${motion.getClass.getSimpleName}' not implemented.")
+      case _ =>
+        (e) => {
+          val config = requestConfig(e)
+          log.info(s"Elevator config: ${config}")
+          if(config.currentState.motion.eq(Idle) ||
+          (config.currentState.motion.eq(MovingUp) && config.currentState.floor < floor) ||
+            (config.currentState.motion.eq(MovingDown) && config.currentState.floor > floor)) {
+            true
+          } else{
+            false
+          }
+      }
     }
+
+  private def requestConfig(ref: ActorRef)(implicit timeout: Timeout): ElevatorConfig = {
+    val rFuture = ref ? GetConfig
+    Await.result(rFuture, Timeout(5 seconds).duration).asInstanceOf[ElevatorConfig]
+  }
 
 }
 

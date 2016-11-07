@@ -41,30 +41,42 @@ class Elevator(id: Int, minLevel: Int, maxLevel: Int) extends FSM[MotionState, C
   startWith(Idle, CurrentState(0, Idle))
 
   when(Idle) {
-    case Event(Initialize(floor),_) => stay using CurrentState(0, Idle)
     case Event(EnqueueFloor(request),_) => {
+      logTransition("Idle")
+      log.info(s"Enqueue request: ${request}")
       enqueueFloor(request)
       stay using stateData
     }
-    case Event(NextQueue(),_) => processQueue(Idle)
-    case _ => stay using stateData
+    case Event(NextQueue,_) => processQueue(Idle)
   }
 
   when(MovingUp) {
     case Event(EnqueueFloor(request),_) => {
+      logTransition("MovingUp")
+      log.info(s"Enqueue request: ${request}")
       enqueueFloor(request)
       stay using stateData
     }
-    case Event(NextQueue(),_) => processQueue(MovingUp)
-    case _ => stay using stateData
+    case Event(NextQueue,_) => processQueue(MovingUp)
   }
 
   when(MovingDown) {
     case Event(EnqueueFloor(request),_) => {
+      logTransition("MovingDown")
+      log.info(s"Enqueue request: ${request}")
       enqueueFloor(request)
       stay using stateData
     }
-    case Event(NextQueue(),_) => processQueue(MovingDown)
+    case Event(NextQueue,_) => processQueue(MovingDown)
+  }
+
+  whenUnhandled {
+    case Event(Initialize(floor),_) => stay using CurrentState(0, Idle)
+    case Event(GetConfig, _) => {
+      logger.info("Received GetConfig request...")
+      sender ! ElevatorConfig(id, stateData)
+      stay using stateData
+    }
     case _ => stay using stateData
   }
 
@@ -100,6 +112,8 @@ class Elevator(id: Int, minLevel: Int, maxLevel: Int) extends FSM[MotionState, C
   }
 
   private def processQueue(currentMotion: MotionState): State = {
+    log.info("Processing queue...")
+    logTransition(s"${currentMotion}")
     currentMotion match {
       case MovingUp => moveUp()
       case MovingDown => moveDown()
@@ -166,7 +180,8 @@ class Elevator(id: Int, minLevel: Int, maxLevel: Int) extends FSM[MotionState, C
 sealed trait ElevatorCommand
 case class Initialize(floor: Int) extends ElevatorCommand
 case class EnqueueFloor(request: FloorRequest) extends ElevatorCommand
-case class NextQueue() extends ElevatorCommand
+case object NextQueue extends ElevatorCommand
+case object GetConfig extends ElevatorCommand
 
 sealed trait MotionState
 case object Idle extends MotionState
@@ -174,6 +189,7 @@ case object MovingUp extends MotionState
 case object MovingDown extends MotionState
 
 sealed trait ElevatorData
+case class ElevatorConfig(elevatorId: Int, currentState: CurrentState) extends ElevatorData
 case class CurrentState(floor: Int, motion: MotionState) extends ElevatorData
 case class FloorRequest(floor: Int, ref: ActorRef) extends ElevatorData
 case class BoardingNotification(elevatorId: Int, floor: Int) extends ElevatorData
