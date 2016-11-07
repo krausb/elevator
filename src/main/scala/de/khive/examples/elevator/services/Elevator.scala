@@ -36,8 +36,8 @@ class Elevator(id: Int, minLevel: Int, maxLevel: Int) extends FSM[MotionState, C
 
   val logger = LoggerFactory.getLogger(getClass)
 
-  private val upQueue = mutable.Queue[FloorRequest]()
-  private val downQueue = mutable.Queue[FloorRequest]()
+  private var upQueue = mutable.Queue[FloorRequest]()
+  private var downQueue = mutable.Queue[FloorRequest]()
 
   // configure the FSM
   startWith(Idle, CurrentState(0, Idle))
@@ -90,14 +90,13 @@ class Elevator(id: Int, minLevel: Int, maxLevel: Int) extends FSM[MotionState, C
     case MovingDown -> MovingDown => logTransition("MovingDown -> MovingDown")
     case MovingDown -> MovingUp => logTransition("MovingDown -> MovingUp")
     case MovingDown -> Idle => logTransition("MovingDown -> Idle")
-    case Idle -> Idle => logTransition("Idle -> Idle")
   }
 
   initialize()
 
   // finally start queue worker schedule
   import scala.concurrent.ExecutionContext.Implicits.global
-  context.system.scheduler.schedule(10 seconds, 10 seconds, self, NextQueue)(global)
+  context.system.scheduler.schedule(10 seconds, 5 seconds, self, NextQueue)(global)
 
   private def logTransition(transition: String): Unit = {
     log.info(s"${transition} - current floor: ${stateData.floor} UpQueue: ${upQueue} - DownQueue: ${downQueue}")
@@ -106,16 +105,18 @@ class Elevator(id: Int, minLevel: Int, maxLevel: Int) extends FSM[MotionState, C
   private def enqueueFloor(request: FloorRequest): Unit = {
     if(request.floor == stateData.floor) {
       request.ref ! BoardingNotification(id, stateData.floor)
-    } else if(request.floor > stateData.floor) {
+    } else if(request.floor > stateData.floor && !upQueue.contains(request)) {
       upQueue.enqueue(request)
-    } else {
+      upQueue = upQueue.sortWith((left, right) => left.floor < right.floor)
+    } else if(!downQueue.contains(request)) {
       downQueue.enqueue(request)
+      downQueue = downQueue.sortWith((left, right) => left.floor > right.floor)
     }
   }
 
   private def processQueue(currentMotion: MotionState): State = {
-    log.info("Processing queue...")
-    logTransition(s"${currentMotion}")
+    log.info(s"Processing queue (id: ${id}) ...")
+    logTransition(s"ID: ${id} - ${currentMotion}")
     currentMotion match {
       case MovingUp => moveUp()
       case MovingDown => moveDown()

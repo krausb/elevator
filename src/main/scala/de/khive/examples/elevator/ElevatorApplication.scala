@@ -32,7 +32,7 @@ object ElevatorApplication extends App {
   private val log = LoggerFactory.getLogger(getClass)
 
   //val config = getConfig()
-  val config = Option(ElevatorApplicationConfig(5,1))
+  val config = Option(ElevatorApplicationConfig(10,2))
 
   if(config.isEmpty) throw new IllegalStateException("Config is empty.")
 
