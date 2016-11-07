@@ -19,12 +19,14 @@
 
 package de.khive.examples.elevator.services
 
-import akka.actor.{ActorRef, FSM}
+import akka.actor.FSM
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
 import scala.concurrent.duration._
 
+import de.khive.examples.elevator.model.elevator._
+import de.khive.examples.elevator.model.elevatordispatcher._
 /**
   * Finite State Machine: Elevator
   *
@@ -176,21 +178,3 @@ class Elevator(id: Int, minLevel: Int, maxLevel: Int) extends FSM[MotionState, C
   def getId: Int = id
 
 }
-
-sealed trait ElevatorCommand
-case class Initialize(floor: Int) extends ElevatorCommand
-case class EnqueueFloor(request: FloorRequest) extends ElevatorCommand
-case object NextQueue extends ElevatorCommand
-case object GetConfig extends ElevatorCommand
-
-sealed trait MotionState
-case object Idle extends MotionState
-case object MovingUp extends MotionState
-case object MovingDown extends MotionState
-
-sealed trait ElevatorData
-case class ElevatorConfig(elevatorId: Int, currentState: CurrentState) extends ElevatorData
-case class CurrentState(floor: Int, motion: MotionState) extends ElevatorData
-case class FloorRequest(floor: Int, ref: ActorRef) extends ElevatorData
-case class BoardingNotification(elevatorId: Int, floor: Int) extends ElevatorData
-case class FloorRequestError(elevatorId: Int, msg: String) extends ElevatorData

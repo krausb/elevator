@@ -19,8 +19,11 @@
 
 package de.khive.examples.elevator.services
 
-import akka.actor.{ActorRef, Props, Actor}
+import akka.actor.{Actor, Props}
 import de.khive.examples.elevator.ElevatorApplication
+import de.khive.examples.elevator.model.consoleinterface._
+import de.khive.examples.elevator.model.elevator._
+import de.khive.examples.elevator.model.elevatordispatcher._
 import org.slf4j.LoggerFactory
 
 /**
@@ -104,8 +107,3 @@ class ConsoleInterface extends Actor {
 object ConsoleInterface {
   val props = Props[ConsoleInterface]
 }
-
-sealed trait ConsoleInterfaceCommand
-case class InitializeConsoleInterface(elevatorDispatcher: ActorRef) extends ConsoleInterfaceCommand
-case object EnableConsoleInput extends ConsoleInterfaceCommand
-case object DisableInput extends ConsoleInterfaceCommand

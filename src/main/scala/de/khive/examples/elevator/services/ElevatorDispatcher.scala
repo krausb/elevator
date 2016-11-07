@@ -24,6 +24,8 @@ import akka.pattern.ask
 import akka.util.Timeout
 
 import de.khive.examples.elevator.ElevatorApplicationConfig
+import de.khive.examples.elevator.model.elevator._
+import de.khive.examples.elevator.model.elevatordispatcher._
 import org.slf4j.LoggerFactory
 
 import scala.concurrent.Await
@@ -101,7 +103,3 @@ class ElevatorDispatcher(config: ElevatorApplicationConfig) extends Actor {
 object ElevatorDispatcher {
   val props = Props[ElevatorDispatcher]
 }
-
-sealed trait ElevatorDispatcherCommand
-case class CallElevatorButtonPressed(sourceFloor: Int, motion: MotionState) extends ElevatorDispatcherCommand
-case class MoveToFloorButtonPressed(elevatorId: Int, targetFloor: Int) extends ElevatorDispatcherCommand
