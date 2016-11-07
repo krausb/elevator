@@ -19,18 +19,17 @@
 
 package de.khive.examples.elevator.services
 
-import akka.actor.{ ActorRef, Props, Actor }
+import akka.actor.{Actor, ActorRef, Props}
 import akka.pattern.ask
 import akka.util.Timeout
-
 import de.khive.examples.elevator.ElevatorApplicationConfig
 import de.khive.examples.elevator.model.elevator._
 import de.khive.examples.elevator.model.elevatordispatcher._
 import org.slf4j.LoggerFactory
 
 import scala.concurrent.Await
-import scala.util.Random
 import scala.concurrent.duration._
+import scala.util.Random
 
 /**
  * The [[Elevator]] Dispatcher is responsable for delegating service requests
@@ -70,6 +69,12 @@ class ElevatorDispatcher(config: ElevatorApplicationConfig) extends Actor {
       log.info(s"(BING) Boarding available for elevator ${elevatorId} on floor ${floor}")
   }
 
+  /**
+    * Enqueue an elevator call for given floor and motion state
+    *
+    * @param floor
+    * @param motion
+    */
   def enqueueElevatorCall(floor: Int, motion: MotionState): Unit = {
     val availableElevators = elevators.filter(getMotionSelector(floor, motion))
     val targetElevator = if (availableElevators.nonEmpty) Random.shuffle(availableElevators).head else Random.shuffle(elevators).head
@@ -77,7 +82,15 @@ class ElevatorDispatcher(config: ElevatorApplicationConfig) extends Actor {
     targetElevator ! EnqueueFloor(FloorRequest(floor, self))
   }
 
-  def getMotionSelector(floor: Int, motion: MotionState)(implicit timeout: Timeout): ActorRef => Boolean =
+  /**
+    * Helper: delivers a filter function strategy used by [[ElevatorDispatcher.enqueueElevatorCall()]]
+    *
+    * @param floor
+    * @param motion
+    * @param timeout
+    * @return
+    */
+  private def getMotionSelector(floor: Int, motion: MotionState)(implicit timeout: Timeout): ActorRef => Boolean =
     motion match {
       case _ =>
         (e) => {
@@ -93,6 +106,13 @@ class ElevatorDispatcher(config: ElevatorApplicationConfig) extends Actor {
         }
     }
 
+  /**
+    * Helper for requesting the elevator config of given [[Elevator]]s [[ActorRef]]
+    *
+    * @param ref
+    * @param timeout
+    * @return
+    */
   private def requestConfig(ref: ActorRef)(implicit timeout: Timeout): ElevatorConfig = {
     val rFuture = ref ? GetConfig
     Await.result(rFuture, Timeout(5 seconds).duration).asInstanceOf[ElevatorConfig]

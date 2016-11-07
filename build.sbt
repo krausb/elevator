@@ -5,7 +5,7 @@ version := "1.0"
 scalaVersion := "2.11.8"
 
 description := "Scala Examples - Reactive Elevator Control Center"
-homepage := Some(url("https://bitbucket.org/ceth/example-reactive-elevator"))
+homepage := Some(url("https://bitbucket.org/ceth/example-elevator"))
 
 licenses := Seq("GNU General Public License (GPL), Version 3.0"
   -> url("http://opensource.org/licenses/GPL-3.0"))

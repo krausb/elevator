@@ -12,6 +12,21 @@ Properties
 - Floor Count
 - Elevator Count
 
+Implementation approach
+-----------------------
+
+
+
+
+Build the Application
+=====================
+
+The Application uses SBT 0.13.13 for management. To compile the project use the following command:
+
+```
+sbt clean compile
+```
+
 Run the Application
 ===================
 
