@@ -19,18 +19,18 @@
 
 package de.khive.examples.elevator
 
-import akka.actor.{ActorSystem, Props}
+import akka.actor.{ ActorSystem, Props }
 import de.khive.examples.elevator.model.consoleinterface._
-import de.khive.examples.elevator.services.{ConsoleInterface, ElevatorDispatcher}
+import de.khive.examples.elevator.services.{ ConsoleInterface, ElevatorDispatcher }
 import org.slf4j.LoggerFactory
 
 /**
-  * Elevator Example Application
-  *
-  * This class is startable by 'java -jar ...'
-  *
-  * Created by ceth on 09.11.16.
-  */
+ * Elevator Example Application
+ *
+ * This class is startable by 'java -jar ...'
+ *
+ * Created by ceth on 09.11.16.
+ */
 object ElevatorApplication extends App {
 
   private val log = LoggerFactory.getLogger(getClass)

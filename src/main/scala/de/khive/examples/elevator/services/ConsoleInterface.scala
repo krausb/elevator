@@ -19,7 +19,7 @@
 
 package de.khive.examples.elevator.services
 
-import akka.actor.{Actor, Props}
+import akka.actor.{ Actor, Props }
 import akka.util.Timeout
 import de.khive.examples.elevator.ElevatorApplication
 import de.khive.examples.elevator.model.consoleinterface._
@@ -31,29 +31,33 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 
 /**
-  * Console User Interface Actor
-  *
-  * Takes user input, parses the given commands and tells it to [[ElevatorDispatcher]]
-  *
-  * Created by ceth on 09.11.16.
-  */
+ * Console User Interface Actor
+ *
+ * Takes user input, parses the given commands and tells it to [[ElevatorDispatcher]]
+ *
+ * Created by ceth on 09.11.16.
+ */
 class ConsoleInterface extends Actor {
 
   val log = LoggerFactory.getLogger(getClass)
 
   implicit val timeout = Timeout(5 seconds)
 
+  @SuppressWarnings(Array("org.brianmckenna.wartremover.warts.Any"))
   def receive: Receive = {
     case EnableConsoleInput => userInput()
-    case t @ _ => log.info(s"Unprocessable command: ${t}")
+    case t @ _ => {
+      log.info(s"Unprocessable command: ${t}")
+      ()
+    }
   }
 
   def userInput(): Unit = {
     printHelp()
-    for(ln <- io.Source.stdin.getLines.takeWhile(!_.equals("exit"))) {
+    for (ln <- io.Source.stdin.getLines.takeWhile(!_.equals("exit"))) {
       log.info(s"Command given: ${ln}")
       try {
-        if(parseCommand(ln)) {
+        if (parseCommand(ln)) {
           Console.println("Command accepted!")
         } else {
           Console.println(s"Error with given command: ${ln}")
@@ -76,12 +80,20 @@ class ConsoleInterface extends Actor {
     try {
       cmdParts match {
         case "call" :: rest => {
-          ElevatorApplication.elevatorDispatcher ! CallElevatorButtonPressed(rest.head.toString.toInt, getMotion(rest(1).toString))
-          true
+          if (rest.nonEmpty && rest.headOption.nonEmpty) {
+            ElevatorApplication.elevatorDispatcher ! CallElevatorButtonPressed(rest(0).toString.toInt, getMotion(rest(1).toString))
+            true
+          } else {
+            false
+          }
         }
         case "move" :: rest => {
-          ElevatorApplication.elevatorDispatcher ! MoveToFloorButtonPressed(rest.head.toString.toInt, rest(1).toString.toInt)
-          true
+          if (rest.nonEmpty && rest.size == 2) {
+            ElevatorApplication.elevatorDispatcher ! MoveToFloorButtonPressed(rest(0).toString.toInt, rest(1).toString.toInt)
+            true
+          } else {
+            false
+          }
         }
         case "help" :: rest => {
           printHelp()
@@ -119,7 +131,8 @@ class ConsoleInterface extends Actor {
         | -> move <elevatorId> <targetFloorNumber> (request to move you to a target floor)
         | -> help (print this peace of text :-)
         | -> exit (quit elevator control!)
-      """)
+      """
+    )
   }
 
 }

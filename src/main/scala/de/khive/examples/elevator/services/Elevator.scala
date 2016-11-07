@@ -28,10 +28,10 @@ import scala.concurrent.duration._
 import de.khive.examples.elevator.model.elevator._
 
 /**
-  * Finite State Machine: Elevator
-  *
-  * Created by ceth on 09.11.16.
-  */
+ * Finite State Machine: Elevator
+ *
+ * Created by ceth on 09.11.16.
+ */
 class Elevator(id: Int, minLevel: Int, maxLevel: Int) extends FSM[MotionState, CurrentState] {
 
   val logger = LoggerFactory.getLogger(getClass)
@@ -43,37 +43,37 @@ class Elevator(id: Int, minLevel: Int, maxLevel: Int) extends FSM[MotionState, C
   startWith(Idle, CurrentState(0, Idle))
 
   when(Idle) {
-    case Event(EnqueueFloor(request),_) => {
+    case Event(EnqueueFloor(request), _) => {
       logTransition("Idle")
       log.info(s"Enqueue request: ${request}")
       enqueueFloor(request)
       stay using stateData
     }
-    case Event(NextQueue,_) => processQueue(Idle)
+    case Event(NextQueue, _) => processQueue(Idle)
   }
 
   when(MovingUp) {
-    case Event(EnqueueFloor(request),_) => {
+    case Event(EnqueueFloor(request), _) => {
       logTransition("MovingUp")
       log.info(s"Enqueue request: ${request}")
       enqueueFloor(request)
       stay using stateData
     }
-    case Event(NextQueue,_) => processQueue(MovingUp)
+    case Event(NextQueue, _) => processQueue(MovingUp)
   }
 
   when(MovingDown) {
-    case Event(EnqueueFloor(request),_) => {
+    case Event(EnqueueFloor(request), _) => {
       logTransition("MovingDown")
       log.info(s"Enqueue request: ${request}")
       enqueueFloor(request)
       stay using stateData
     }
-    case Event(NextQueue,_) => processQueue(MovingDown)
+    case Event(NextQueue, _) => processQueue(MovingDown)
   }
 
   whenUnhandled {
-    case Event(Initialize(floor),_) => stay using CurrentState(0, Idle)
+    case Event(Initialize(floor), _) => stay using CurrentState(0, Idle)
     case Event(GetConfig, _) => {
       logger.info("Received GetConfig request...")
       sender ! ElevatorConfig(id, stateData)
@@ -103,12 +103,12 @@ class Elevator(id: Int, minLevel: Int, maxLevel: Int) extends FSM[MotionState, C
   }
 
   private def enqueueFloor(request: FloorRequest): Unit = {
-    if(request.floor == stateData.floor) {
+    if (request.floor == stateData.floor) {
       request.ref ! BoardingNotification(id, stateData.floor)
-    } else if(request.floor > stateData.floor && !upQueue.contains(request)) {
+    } else if (request.floor > stateData.floor && !upQueue.contains(request)) {
       upQueue.enqueue(request)
       upQueue = upQueue.sortWith((left, right) => left.floor < right.floor)
-    } else if(!downQueue.contains(request)) {
+    } else if (!downQueue.contains(request)) {
       downQueue.enqueue(request)
       downQueue = downQueue.sortWith((left, right) => left.floor > right.floor)
     }
@@ -124,16 +124,15 @@ class Elevator(id: Int, minLevel: Int, maxLevel: Int) extends FSM[MotionState, C
     }
   }
 
-
   private def moveUp(): State = {
-    if(upQueue.nonEmpty && upQueue.head.floor == stateData.floor) {
+    if (upQueue.nonEmpty && upQueue.head.floor == stateData.floor) {
       upQueue.dequeue().ref ! BoardingNotification(id, stateData.floor)
     }
 
-    if(upQueue.nonEmpty && stateData.floor < maxLevel) {
-      goto(MovingUp) using CurrentState(stateData.floor + 1,MovingUp)
-    } else if(downQueue.nonEmpty) {
-      if(upQueue.nonEmpty) {
+    if (upQueue.nonEmpty && stateData.floor < maxLevel) {
+      goto(MovingUp) using CurrentState(stateData.floor + 1, MovingUp)
+    } else if (downQueue.nonEmpty) {
+      if (upQueue.nonEmpty) {
         upQueue.foreach(r => enqueueFloor(r))
         upQueue.clear()
       }
@@ -144,14 +143,14 @@ class Elevator(id: Int, minLevel: Int, maxLevel: Int) extends FSM[MotionState, C
   }
 
   private def moveDown(): State = {
-    if(downQueue.nonEmpty && downQueue.head.floor == stateData.floor) {
+    if (downQueue.nonEmpty && downQueue.head.floor == stateData.floor) {
       downQueue.dequeue().ref ! BoardingNotification(id, stateData.floor)
     }
 
-    if(downQueue.nonEmpty && stateData.floor > 0) {
-      goto(MovingDown) using CurrentState(stateData.floor - 1,MovingDown)
-    } else if(upQueue.nonEmpty) {
-      if(downQueue.nonEmpty) {
+    if (downQueue.nonEmpty && stateData.floor > 0) {
+      goto(MovingDown) using CurrentState(stateData.floor - 1, MovingDown)
+    } else if (upQueue.nonEmpty) {
+      if (downQueue.nonEmpty) {
         downQueue.foreach(r => enqueueFloor(r))
         downQueue.clear()
       }
@@ -162,9 +161,9 @@ class Elevator(id: Int, minLevel: Int, maxLevel: Int) extends FSM[MotionState, C
   }
 
   private def isIdle(): State = {
-    if(upQueue.nonEmpty) {
+    if (upQueue.nonEmpty) {
       goto(MovingUp) using CurrentState(stateData.floor + 1, MovingUp)
-    } else if(downQueue.nonEmpty) {
+    } else if (downQueue.nonEmpty) {
       goto(MovingDown) using CurrentState(stateData.floor - 1, MovingDown)
     } else {
       stay using stateData
@@ -172,10 +171,10 @@ class Elevator(id: Int, minLevel: Int, maxLevel: Int) extends FSM[MotionState, C
   }
 
   /**
-    * Get the current elevator id
-    *
-    * @return
-    */
+   * Get the current elevator id
+   *
+   * @return
+   */
   def getId: Int = id
 
 }

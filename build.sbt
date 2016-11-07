@@ -31,7 +31,6 @@ libraryDependencies ++= {
     "ch.qos.logback"              %  "logback-classic"                   % "1.1.7"  % "compile,runtime,test",
     "org.log4s"                   %% "log4s"                             % "1.3.0",
 
-    "org.scalatest"               %% "scalatest"                         % "2.2.6"  % "test",
     "org.scalacheck"              %% "scalacheck"                        % "1.13.1" % "test",
     "com.typesafe.akka"           %% "akka-testkit"                      % akkaV    % "test",
     "org.scalactic"               %% "scalactic"                         % scalaTestV,
@@ -63,7 +62,8 @@ javacOptions ++= Seq("-source", "1.8", "-target", "1.8")
 wartremover.wartremoverSettings
 
 wartremover.wartremoverErrors in (Compile, compile) ++= Seq(
-  wartremover.Wart.Any,
+  // Disabled in case of akka problem
+  // wartremover.Wart.Any,
   wartremover.Wart.Any2StringAdd,
   wartremover.Wart.EitherProjectionPartial,
   wartremover.Wart.OptionPartial,

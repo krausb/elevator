@@ -22,33 +22,33 @@ package de.khive.examples.elevator
 import com.typesafe.config.ConfigFactory
 
 /**
-  * Elevator Application Configuration Provider
-  */
+ * Elevator Application Configuration Provider
+ */
 object ElevatorApplicationConfig {
 
   /**
-    * Create [[ElevatorApplicationConfig]] from internal application.conf file.
-    *
-    * @return Option[ElevatorApplicationConfig]
-    */
-   def fromConfiguration(): ElevatorApplicationConfig = {
+   * Create [[ElevatorApplicationConfig]] from internal application.conf file.
+   *
+   * @return Option[ElevatorApplicationConfig]
+   */
+  def fromConfiguration(): ElevatorApplicationConfig = {
     val config = ConfigFactory.load()
     ElevatorApplicationConfig(config.getInt("elevator.floorCount"), config.getInt("elevator.elevatorCount"))
   }
 
   /**
-    * Parse command line args into [[ElevatorApplicationConfig]]
-    *
-    * @return Option[ElevatorApplicationConfig]
-    */
+   * Parse command line args into [[ElevatorApplicationConfig]]
+   *
+   * @return Option[ElevatorApplicationConfig]
+   */
   def fromArgs(args: Array[String]): ElevatorApplicationConfig = {
     val parser = new scopt.OptionParser[ElevatorApplicationConfig]("example-elevator") {
       head("example-elevator", "1.0")
 
-      opt[Int]('f', "floorCount").required().action( (x, c) =>
-        c.copy(floorCount = x) ).text("floorCount is an integer property")
-      opt[Int]('e', "elevatorCount").required().action( (x, c) =>
-        c.copy(elevatorCount = x) ).text("elevatorCount is an integer property")
+      opt[Int]('f', "floorCount").required().action((x, c) =>
+        c.copy(floorCount = x)).text("floorCount is an integer property")
+      opt[Int]('e', "elevatorCount").required().action((x, c) =>
+        c.copy(elevatorCount = x)).text("elevatorCount is an integer property")
     }
 
     parser.parse(args, ElevatorApplicationConfig()) match {

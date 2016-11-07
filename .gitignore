@@ -5,12 +5,13 @@
 .cache
 .history
 .lib/
+.idea/
 dist/*
 target/
 lib_managed/
 src_managed/
-project/target
-project/project/target
+project/target/
+project/project/target/
 project/boot/
 project/plugins/project/
 

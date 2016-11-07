@@ -19,7 +19,7 @@
 
 package de.khive.examples.elevator.services
 
-import akka.actor.{ActorRef, Props, Actor}
+import akka.actor.{ ActorRef, Props, Actor }
 import akka.pattern.ask
 import akka.util.Timeout
 
@@ -33,11 +33,11 @@ import scala.util.Random
 import scala.concurrent.duration._
 
 /**
-  * The [[Elevator]] Dispatcher is responsable for delegating service requests
-  * to the registered elevators.
-  *
-  * Created by ceth on 09.11.16.
-  */
+ * The [[Elevator]] Dispatcher is responsable for delegating service requests
+ * to the registered elevators.
+ *
+ * Created by ceth on 09.11.16.
+ */
 class ElevatorDispatcher(config: ElevatorApplicationConfig) extends Actor {
 
   var log = LoggerFactory.getLogger(getClass)
@@ -54,25 +54,25 @@ class ElevatorDispatcher(config: ElevatorApplicationConfig) extends Actor {
   }
 
   override def receive: Receive = {
-    case c@CallElevatorButtonPressed(sourceFloor, motion) => {
+    case c @ CallElevatorButtonPressed(sourceFloor, motion) => {
       log.info(s"Received ${c} ...")
       enqueueElevatorCall(sourceFloor, motion)
     }
-    case m@MoveToFloorButtonPressed(elevatorId, targetFloor) =>
+    case m @ MoveToFloorButtonPressed(elevatorId, targetFloor) =>
       log.info(s"Received ${m} ...")
       elevators.filter(e => {
         val rFuture = e ? GetConfig
         val result = Await.result(rFuture, timeout.duration).asInstanceOf[ElevatorConfig]
-        if(result.elevatorId == elevatorId) true else false
+        if (result.elevatorId == elevatorId) true else false
       }).foreach(e => e ! EnqueueFloor(FloorRequest(targetFloor, self)))
-    case b@BoardingNotification(elevatorId,floor) =>
+    case b @ BoardingNotification(elevatorId, floor) =>
       log.info(s"Received ${b} ...")
       log.info(s"(BING) Boarding available for elevator ${elevatorId} on floor ${floor}")
   }
 
   def enqueueElevatorCall(floor: Int, motion: MotionState): Unit = {
     val availableElevators = elevators.filter(getMotionSelector(floor, motion))
-    val targetElevator = if(availableElevators.nonEmpty) Random.shuffle(availableElevators).head else Random.shuffle(elevators).head
+    val targetElevator = if (availableElevators.nonEmpty) Random.shuffle(availableElevators).head else Random.shuffle(elevators).head
     log.info(s"Selected elevator to send to ${floor} with motion ${motion}: ${targetElevator}")
     targetElevator ! EnqueueFloor(FloorRequest(floor, self))
   }
@@ -83,14 +83,14 @@ class ElevatorDispatcher(config: ElevatorApplicationConfig) extends Actor {
         (e) => {
           val config = requestConfig(e)
           log.info(s"Elevator config: ${config}")
-          if(config.currentState.motion.eq(Idle) ||
-          (config.currentState.motion.eq(MovingUp) && config.currentState.floor < floor) ||
+          if (config.currentState.motion.eq(Idle) ||
+            (config.currentState.motion.eq(MovingUp) && config.currentState.floor < floor) ||
             (config.currentState.motion.eq(MovingDown) && config.currentState.floor > floor)) {
             true
-          } else{
+          } else {
             false
           }
-      }
+        }
     }
 
   private def requestConfig(ref: ActorRef)(implicit timeout: Timeout): ElevatorConfig = {
