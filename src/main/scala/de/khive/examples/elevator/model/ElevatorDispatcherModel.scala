@@ -19,6 +19,8 @@
 
 package de.khive.examples.elevator.model
 
+import de.khive.examples.elevator.model.elevator._
+
 package elevatordispatcher {
 
   sealed trait ElevatorDispatcherCommand

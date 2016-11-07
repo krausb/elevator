@@ -20,7 +20,7 @@
 package de.khive.examples.elevator
 
 import akka.actor.{ActorSystem, Props}
-import de.khive.examples.elevator.model.EnableConsoleInput
+import de.khive.examples.elevator.model.consoleinterface._
 import de.khive.examples.elevator.services.{ConsoleInterface, ElevatorDispatcher}
 import org.slf4j.LoggerFactory
 

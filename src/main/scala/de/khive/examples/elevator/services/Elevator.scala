@@ -26,7 +26,7 @@ import scala.collection.mutable
 import scala.concurrent.duration._
 
 import de.khive.examples.elevator.model.elevator._
-import de.khive.examples.elevator.model.elevatordispatcher._
+
 /**
   * Finite State Machine: Elevator
   *
