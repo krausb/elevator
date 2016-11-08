@@ -23,12 +23,21 @@ import akka.actor.ActorRef
 
 package consoleinterface {
 
+  /**
+   * Trait for defining a [[de.khive.examples.elevator.services.ConsoleInterface]] actor command
+   */
   sealed trait ConsoleInterfaceCommand
 
+  /**
+   * Initialize the [[de.khive.examples.elevator.services.ConsoleInterface]] with elevatorDispatcher
+   *
+   * @param elevatorDispatcher
+   */
   case class InitializeConsoleInterface(elevatorDispatcher: ActorRef) extends ConsoleInterfaceCommand
 
+  /**
+   * Advice the [[de.khive.examples.elevator.services.ConsoleInterface]] [[akka.actor.Actor]] to start to consume user input from STDIN
+   */
   case object EnableConsoleInput extends ConsoleInterfaceCommand
-
-  case object DisableInput extends ConsoleInterfaceCommand
 
 }

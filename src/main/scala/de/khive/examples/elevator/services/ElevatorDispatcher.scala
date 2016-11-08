@@ -19,13 +19,13 @@
 
 package de.khive.examples.elevator.services
 
-import akka.actor.{Actor, ActorRef, Props}
+import akka.actor.{ Actor, ActorRef, Props }
 import akka.pattern.ask
 import akka.util.Timeout
 import de.khive.examples.elevator.ElevatorApplicationConfig
-import de.khive.examples.elevator.model.elevator.{ElevatorNotFoundException, GetConfig, _}
+import de.khive.examples.elevator.model.elevator.{ ElevatorNotFoundException, GetConfig, _ }
 import de.khive.examples.elevator.model.elevatordispatcher._
-import de.khive.examples.elevator.model.timestepper.{DoStep, StartSteppingAutomation, StopSteppingAutomation}
+import de.khive.examples.elevator.model.timestepper.{ DoStep, StartSteppingAutomation, StopSteppingAutomation }
 import org.slf4j.LoggerFactory
 
 import scala.concurrent.Await
@@ -62,23 +62,26 @@ class ElevatorDispatcher(config: ElevatorApplicationConfig) extends Actor with E
     }
     case m @ MoveToFloor(elevatorId, targetFloor) => {
       log.info(s"Received ${m} ...")
-      getElevatorActorById(elevatorId).get ! EnqueueFloor(FloorRequest(targetFloor, self))
+      getElevatorActorById(elevatorId) match {
+        case Some(elevator) => elevator ! EnqueueFloor(FloorRequest(targetFloor, self))
+        case _ => throw new ElevatorNotFoundException(s"Elevator with given id ${elevatorId} not found.")
+      }
     }
     case b @ BoardingNotification(elevatorId, floor) => {
       log.info(s"Received ${b} ...")
       log.info(s"(BING) Boarding available for elevator ${elevatorId} on floor ${floor}")
     }
     case GetStatus => sender ! status()
-    case DoStep(slots) => for(s <- 0 until slots) elevators.foreach(e => e ! NextQueue)
+    case DoStep(slots) => for (s <- 0 until slots) elevators.foreach(e => e ! NextQueue)
     case t @ (StopSteppingAutomation | StartSteppingAutomation) => timeStepper ! t
   }
 
   /**
-    * Enqueue an elevator call for given floor and motion state
-    *
-    * @param floor
-    * @param motion
-    */
+   * Enqueue an elevator call for given floor and motion state
+   *
+   * @param floor
+   * @param motion
+   */
   def enqueueElevatorCall(floor: Int, motion: MotionState): Unit = {
     val availableElevators = elevators.filter(getMotionSelector(floor, motion))
     val targetElevator = if (availableElevators.nonEmpty) Random.shuffle(availableElevators).head else Random.shuffle(elevators).head
@@ -87,66 +90,70 @@ class ElevatorDispatcher(config: ElevatorApplicationConfig) extends Actor with E
   }
 
   /**
-    * Helper: delivers a filter function strategy used by [[ElevatorDispatcher.enqueueElevatorCall()]]
-    *
-    * @param floor
-    * @param motion
-    * @param timeout
-    * @return
-    */
+   * Helper: delivers a filter function strategy used by [[ElevatorDispatcher.enqueueElevatorCall()]]
+   *
+   * @param floor
+   * @param motion
+   * @param timeout
+   * @return
+   */
   private def getMotionSelector(floor: Int, motion: MotionState)(implicit timeout: Timeout): ActorRef => Boolean =
     motion match {
       case _ =>
         (e) => {
-          val config = requestConfig(e).get
-
-          log.info(s"Elevator config: ${config}")
-          if (config.currentState.motion.eq(Idle) ||
-            (config.currentState.motion.eq(MovingUp) && config.currentState.floor < floor) ||
-            (config.currentState.motion.eq(MovingDown) && config.currentState.floor > floor)) {
-            true
-          } else {
-            false
+          requestConfig(e) match {
+            case Some(config) => {
+              if (config.currentState.motion.eq(Idle) ||
+                (config.currentState.motion.eq(MovingUp) && config.currentState.floor < floor) ||
+                (config.currentState.motion.eq(MovingDown) && config.currentState.floor > floor)) {
+                true
+              } else {
+                false
+              }
+            }
+            case _ => false
           }
         }
     }
 
   /**
-    * Helper for requesting the elevator config of given [[Elevator]]s [[ActorRef]]
-    *
-    * @param ref
-    * @param timeout
-    * @return Option[ElevatorConfig]
-    */
+   * Helper for requesting the elevator config of given [[Elevator]]s [[ActorRef]]
+   *
+   * @param ref
+   * @param timeout
+   * @return Option[ElevatorConfig]
+   */
   private def requestConfig(ref: ActorRef)(implicit timeout: Timeout): Option[ElevatorConfig] = {
     val rFuture = ref ? GetConfig
     try {
-        Option(Await.result(rFuture, Timeout(5 seconds).duration).asInstanceOf[ElevatorConfig])
+      Option(Await.result(rFuture, Timeout(5 seconds).duration).asInstanceOf[ElevatorConfig])
     } catch {
       case e: Exception => None
     }
   }
 
   /**
-    * Request an [[Elevator]] by given elevatorId. Returns an [[Option]] containing the [[ActorRef]]
-    * or an empty [[Option]] if no elevator with given ID is found.
-    *
-    * @param elevatorId
-    * @return Option[ActorRef]
-    */
+   * Request an [[Elevator]] by given elevatorId. Returns an [[Option]] containing the [[ActorRef]]
+   * or an empty [[Option]] if no elevator with given ID is found.
+   *
+   * @param elevatorId
+   * @return Option[ActorRef]
+   */
   def getElevatorActorById(elevatorId: Int): Option[ActorRef] = {
     val rest = elevators.filter(e => {
-      val config = requestConfig(e)
-      if (config.nonEmpty && config.getOrElse(None) == elevatorId) true else false
+      requestConfig(e) match {
+        case Some(config) => if (config == elevatorId) true else false
+        case _ => false
+      }
     })
-    if(rest.nonEmpty) {
+    if (rest.nonEmpty) {
       Option(rest(0))
     } else {
       None
     }
   }
 
-  override def status(): Seq[ElevatorConfig] = for(e <- elevators) yield requestConfig(e).get
+  override def status(): Seq[ElevatorConfig] = elevators.flatMap(e => requestConfig(e))
 
   override def update(elevatorId: Int, sourceFloor: Int, targetFloor: Int): Unit = {
     update(elevatorId, sourceFloor)
@@ -154,17 +161,15 @@ class ElevatorDispatcher(config: ElevatorApplicationConfig) extends Actor with E
   }
 
   override def update(elevatorId: Int, targetFloor: Int): Unit = {
-    val elevatorRef = getElevatorActorById(elevatorId)
-    if(elevatorRef.nonEmpty) {
-      elevatorRef.get ! EnqueueFloor(FloorRequest(targetFloor, self))
-    } else {
-      throw new ElevatorNotFoundException(s"No elevator with ID ${elevatorId} found.")
+    getElevatorActorById(elevatorId) match {
+      case Some(elevatorRef) => elevatorRef ! EnqueueFloor(FloorRequest(targetFloor, self))
+      case _ => throw new ElevatorNotFoundException(s"No elevator with ID ${elevatorId} found.")
     }
   }
 
   override def pickup(floor: Int, motion: MotionState): Unit = enqueueElevatorCall(floor, motion)
 
-  override def step(slots: Int = 1): Unit = for(i <- 0 until slots) timeStepper ! DoStep
+  override def step(slots: Int = 1): Unit = for (i <- 0 until slots) timeStepper ! DoStep
 
   override def stopStepping(): Unit = timeStepper ! StopSteppingAutomation
 
@@ -177,59 +182,59 @@ object ElevatorDispatcher {
 }
 
 /**
-  * Elevator Control System interface
-  *
-  * Created by ceth on 08.11.16.
-  */
+ * Elevator Control System interface
+ *
+ * Created by ceth on 08.11.16.
+ */
 trait ElevatorControlSystem {
 
   /**
-    * Get the status of all available [[Elevator]]s
-    *
-    * @return
-    */
+   * Get the status of all available [[Elevator]]s
+   *
+   * @return
+   */
   def status(): Seq[ElevatorConfig]
 
   /**
-    * Move an [[Elevator]] selected given elevatorId from sourceFloor to the targetFloor
-    *
-    * @param elevatorId
-    * @param sourceFloor
-    * @param targetFloor
-    * @throws ElevatorNotFoundException
-    */
+   * Move an [[Elevator]] selected given elevatorId from sourceFloor to the targetFloor
+   *
+   * @param elevatorId
+   * @param sourceFloor
+   * @param targetFloor
+   * @throws ElevatorNotFoundException
+   */
   def update(elevatorId: Int, sourceFloor: Int, targetFloor: Int): Unit
 
   /**
-    * Send an [[Elevator]] given by elevatorId to targetFloor.
-    *
-    * @param elevatorId
-    * @param targetFloor
-    */
+   * Send an [[Elevator]] given by elevatorId to targetFloor.
+   *
+   * @param elevatorId
+   * @param targetFloor
+   */
   def update(elevatorId: Int, targetFloor: Int): Unit
 
   /**
-    * Request an [[Elevator]] to pick the passenger up from the given floor in direction of given
-    * motion.
-    *
-    * @param floor
-    * @param motion
-    */
+   * Request an [[Elevator]] to pick the passenger up from the given floor in direction of given
+   * motion.
+   *
+   * @param floor
+   * @param motion
+   */
   def pickup(floor: Int, motion: MotionState): Unit
 
   /**
-    * Advice internal the [[TimeStepperService]] to do a tick into the next timeslot.
-    */
+   * Advice internal the [[TimeStepperService]] to do a tick into the next timeslot.
+   */
   def step(slots: Int = 1): Unit
 
   /**
-    * Freeze the internal [[TimeStepperService]] automation
-    */
+   * Freeze the internal [[TimeStepperService]] automation
+   */
   def stopStepping(): Unit
 
   /**
-    * Start the internal [[TimeStepperService]] automation
-    */
+   * Start the internal [[TimeStepperService]] automation
+   */
   def startStepping(): Unit
 
 }

@@ -20,23 +20,22 @@
 package de.khive.examples.elevator.services
 
 import akka.actor.ActorSystem
-import akka.testkit.{ImplicitSender, TestActorRef, TestKit, TestProbe}
+import akka.testkit.{ ImplicitSender, TestActorRef, TestKit, TestProbe }
 import akka.util.Timeout
 import de.khive.examples.elevator.ElevatorApplicationConfig
-import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll, FlatSpecLike, MustMatchers}
+import org.scalatest.{ BeforeAndAfter, BeforeAndAfterAll, FlatSpecLike, MustMatchers }
 
 import scala.concurrent.duration._
 
-
 /**
-  * Unit Testing Suite for [[ElevatorDispatcher]]
-  *
-  * Created by ceth on 08.11.16.
-  */
-class ElevatorDispatcherTestSuite extends TestKit(ActorSystem("ElevatorTestSuite"))  with ImplicitSender with FlatSpecLike
-  with MustMatchers with BeforeAndAfter with BeforeAndAfterAll {
+ * Unit Testing Suite for [[ElevatorDispatcher]]
+ *
+ * Created by ceth on 08.11.16.
+ */
+class ElevatorDispatcherTestSuite extends TestKit(ActorSystem("ElevatorTestSuite")) with ImplicitSender with FlatSpecLike
+    with MustMatchers with BeforeAndAfter with BeforeAndAfterAll {
 
-  val dispatcher = TestActorRef[ElevatorDispatcher](new ElevatorDispatcher(ElevatorApplicationConfig(10,1)))
+  val dispatcher = TestActorRef[ElevatorDispatcher](new ElevatorDispatcher(ElevatorApplicationConfig(10, 1)))
 
   implicit val timeout = Timeout(5 seconds)
 

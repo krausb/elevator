@@ -19,20 +19,20 @@
 
 package de.khive.examples.elevator.services
 
-import akka.actor.{Actor, ActorRef, Cancellable}
+import akka.actor.{ Actor, ActorRef, Cancellable }
 import de.khive.examples.elevator.model.elevator.NextQueue
-import de.khive.examples.elevator.model.timestepper.{DoStep, StartSteppingAutomation, StopSteppingAutomation}
+import de.khive.examples.elevator.model.timestepper.{ DoStep, StartSteppingAutomation, StopSteppingAutomation }
 import org.slf4j.LoggerFactory
 
 import scala.concurrent.duration._
 
 /**
-  * Time Stepper Worker Service
-  *
-  * Sends a [[NextQueue]] to the given delegate in a configurable duration
-  *
-  * Created by ceth on 08.11.16.
-  */
+ * Time Stepper Worker Service
+ *
+ * Sends a [[NextQueue]] to the given delegate in a configurable duration
+ *
+ * Created by ceth on 08.11.16.
+ */
 class TimeStepperService(delegate: ActorRef) extends Actor {
 
   val log = LoggerFactory.getLogger(getClass)
@@ -47,18 +47,21 @@ class TimeStepperService(delegate: ActorRef) extends Actor {
       for (c <- 0 until slots) delegate ! NextQueue
     }
     case StartSteppingAutomation => {
-      if(scheduleRef.isEmpty) {
+      if (scheduleRef.isEmpty) {
         scheduleRef = Option(context.system.scheduler.schedule(10 seconds, 5 seconds, delegate, DoStep)(global))
         log.info("Stepper started!")
       }
     }
     case StopSteppingAutomation => {
-      if(scheduleRef.nonEmpty) {
-        scheduleRef.get.cancel()
-        if(scheduleRef.get.isCancelled) {
-          scheduleRef = None
+      scheduleRef match {
+        case Some(ref) => {
+          ref.cancel()
+          if (ref.isCancelled) {
+            scheduleRef = None
+          }
+          log.info("Stepper stopped!")
         }
-        log.info("Stepper stopped!")
+        case _ => ()
       }
     }
     case _ => ()

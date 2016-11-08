@@ -21,34 +21,35 @@ package de.khive.examples.elevator.services
 
 import akka.actor.ActorSystem
 import akka.pattern.ask
-import akka.testkit.{ImplicitSender, TestActorRef, TestFSMRef, TestKit, TestProbe}
+import akka.testkit.{ ImplicitSender, TestActorRef, TestFSMRef, TestKit, TestProbe }
 import akka.util.Timeout
 import de.khive.examples.elevator.model.elevator._
-import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll, FlatSpecLike, MustMatchers}
+import org.scalactic.source.Position
+import org.scalatest.{ BeforeAndAfter, FlatSpecLike, MustMatchers }
 
 import scala.collection.mutable
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
 /**
-  * Unit Test Suite for [[Elevator]]
-  *
-  * Created by ceth on 08.11.16.
-  */
-class ElevatorTestSuite extends TestKit(ActorSystem("ElevatorTestSuite"))  with ImplicitSender with FlatSpecLike
-  with MustMatchers with BeforeAndAfter with BeforeAndAfterAll {
+ * Unit Test Suite for [[Elevator]]
+ *
+ * Created by ceth on 08.11.16.
+ */
+class ElevatorTestSuite extends TestKit(ActorSystem("ElevatorTestSuite")) with ImplicitSender with FlatSpecLike
+    with MustMatchers with BeforeAndAfter {
 
   implicit val timeout = Timeout(5 seconds)
 
-  val fsm = TestFSMRef(new Elevator(id = 0, minLevel = 0, maxLevel = 10))
-
-  val probe = TestProbe()
-
-  override def afterAll: Unit = {
+  override protected def after(fun: => Any)(implicit pos: Position): Unit = {
     TestKit.shutdownActorSystem(system)
+    super.after(fun)
   }
 
   "The elevator fsm" must "be initialized correctly" in {
+    val fsm = TestFSMRef(new Elevator(id = 0, minLevel = 0, maxLevel = 10))
+    val probe = TestProbe()
+
     // test if elevator actor is correct typed
     val properlyTyped: TestActorRef[Elevator] = fsm
 
@@ -59,6 +60,9 @@ class ElevatorTestSuite extends TestKit(ActorSystem("ElevatorTestSuite"))  with 
   }
 
   "The elevator fsm" should "receive an EnqueueFloor(...) message" in {
+    val fsm = TestFSMRef(new Elevator(id = 0, minLevel = 0, maxLevel = 10))
+    val probe = TestProbe()
+
     // test an elevator call to floors and do the NextQueue steps
     val testMsg = EnqueueFloor(FloorRequest(3, probe.ref))
     fsm ! testMsg
@@ -70,6 +74,9 @@ class ElevatorTestSuite extends TestKit(ActorSystem("ElevatorTestSuite"))  with 
   }
 
   "The elevator fsm" should "move from initial level 0 to the requested and enqueued floor 3" in {
+    val fsm = TestFSMRef(new Elevator(id = 0, minLevel = 0, maxLevel = 10))
+    val probe = TestProbe()
+
     // test an elevator call to floors and do the NextQueue steps
     val testMsg = EnqueueFloor(FloorRequest(3, probe.ref))
     fsm ! testMsg
@@ -87,7 +94,7 @@ class ElevatorTestSuite extends TestKit(ActorSystem("ElevatorTestSuite"))  with 
     assert(fsm.stateData.floor == 3)
     assert(fsm.stateName == Idle)
 
-    probe.expectMsg(BoardingNotification(0,3))
+    probe.expectMsg(BoardingNotification(0, 3))
   }
 
 }

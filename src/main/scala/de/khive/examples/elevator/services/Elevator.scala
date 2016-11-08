@@ -78,7 +78,8 @@ class Elevator(id: Int, minLevel: Int, maxLevel: Int) extends FSM[MotionState, C
         id,
         stateData,
         collection.immutable.Queue[FloorRequest]() ++ upQueue,
-        collection.immutable.Queue[FloorRequest]() ++ downQueue)
+        collection.immutable.Queue[FloorRequest]() ++ downQueue
+      )
       stay using stateData
     }
     case Event(GetUpQueue, _) => {
@@ -104,10 +105,24 @@ class Elevator(id: Int, minLevel: Int, maxLevel: Int) extends FSM[MotionState, C
 
   initialize()
 
+  /**
+   * Helper: Log the current transition with state.
+   *
+   * @param transition
+   */
   private def logTransition(transition: String): Unit = {
     log.info(s"${transition} - current floor: ${stateData.floor} UpQueue: ${upQueue} - DownQueue: ${downQueue}")
   }
 
+  /**
+   * Helper: Enqueue a given [[FloorRequest]] into suitable queue.
+   *
+   * Prio 1: if requested floor is current -> return [[BoardingNotification]] immediately
+   * If requested floor > current -> to upwards queue
+   * If requested floor < current -> to downwards queue
+   *
+   * @param request
+   */
   private def enqueueFloor(request: FloorRequest): Unit = {
     if (request.floor == stateData.floor) {
       request.ref ! BoardingNotification(id, stateData.floor)
@@ -120,6 +135,12 @@ class Elevator(id: Int, minLevel: Int, maxLevel: Int) extends FSM[MotionState, C
     }
   }
 
+  /**
+   * Process time slot with given motion state.
+   *
+   * @param currentMotion
+   * @return
+   */
   private def processQueue(currentMotion: MotionState): State = {
     log.info(s"Processing queue (id: ${id}) ...")
     logTransition(s"ID: ${id} - ${currentMotion}")
@@ -130,6 +151,11 @@ class Elevator(id: Int, minLevel: Int, maxLevel: Int) extends FSM[MotionState, C
     }
   }
 
+  /**
+   * Helper: do a move up
+   *
+   * @return
+   */
   private def moveUp(): State = {
     if (upQueue.nonEmpty && upQueue.head.floor == stateData.floor) {
       upQueue.dequeue().ref ! BoardingNotification(id, stateData.floor)
@@ -148,6 +174,10 @@ class Elevator(id: Int, minLevel: Int, maxLevel: Int) extends FSM[MotionState, C
     }
   }
 
+  /**
+   * Helper: do a move down
+   * @return
+   */
   private def moveDown(): State = {
     if (downQueue.nonEmpty && downQueue.head.floor == stateData.floor) {
       downQueue.dequeue().ref ! BoardingNotification(id, stateData.floor)
@@ -166,6 +196,11 @@ class Elevator(id: Int, minLevel: Int, maxLevel: Int) extends FSM[MotionState, C
     }
   }
 
+  /**
+   * Do a idle move
+   *
+   * @return
+   */
   private def isIdle(): State = {
     if (upQueue.nonEmpty) {
       goto(MovingUp) using CurrentState(stateData.floor + 1, MovingUp)

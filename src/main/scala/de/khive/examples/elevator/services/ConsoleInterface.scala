@@ -19,14 +19,14 @@
 
 package de.khive.examples.elevator.services
 
-import akka.actor.{Actor, Props}
+import akka.actor.{ Actor, Props }
 import akka.pattern.ask
 import akka.util.Timeout
 import de.khive.examples.elevator.ElevatorApplication
 import de.khive.examples.elevator.model.consoleinterface._
 import de.khive.examples.elevator.model.elevator._
-import de.khive.examples.elevator.model.elevatordispatcher.{GetStatus, _}
-import de.khive.examples.elevator.model.timestepper.{DoStep, StartSteppingAutomation, StopSteppingAutomation}
+import de.khive.examples.elevator.model.elevatordispatcher.{ GetStatus, _ }
+import de.khive.examples.elevator.model.timestepper.{ DoStep, StartSteppingAutomation, StopSteppingAutomation }
 import org.slf4j.LoggerFactory
 
 import scala.concurrent.Await
@@ -45,7 +45,6 @@ class ConsoleInterface extends Actor {
 
   implicit val timeout = Timeout(5 seconds)
 
-  @SuppressWarnings(Array("org.brianmckenna.wartremover.warts.Any"))
   def receive: Receive = {
     case EnableConsoleInput => userInput()
     case t @ _ => {
@@ -54,6 +53,10 @@ class ConsoleInterface extends Actor {
     }
   }
 
+  /**
+   * Start to consume user input line by line from STDIN until the user enters
+   * the 'exit\ command.
+   */
   def userInput(): Unit = {
     printHelp()
     for (ln <- io.Source.stdin.getLines.takeWhile(!_.equals("exit"))) {
@@ -77,6 +80,12 @@ class ConsoleInterface extends Actor {
     System.exit(0)
   }
 
+  /**
+   * Parse the given cmd string and delegate the successfully parsed command to a further method.
+   *
+   * @param cmd
+   * @return
+   */
   def parseCommand(cmd: String): Boolean = {
     val cmdParts: List[String] = cmd.split(" ").toList
     try {
@@ -99,16 +108,16 @@ class ConsoleInterface extends Actor {
   }
 
   /**
-    * Tell the [[ElevatorDispatcher]] to return a [[Seq]] of [[ElevatorConfig]]s of all available elevators
-    *
-    * @return
-    */
+   * Tell the [[ElevatorDispatcher]] to return a [[Seq]] of [[ElevatorConfig]]s of all available elevators
+   *
+   * @return
+   */
   def doStatus(): Boolean = {
     val rFuture = ElevatorApplication.elevatorDispatcher ? GetStatus
     try {
       val result = Await.result(rFuture, timeout.duration).asInstanceOf[Seq[ElevatorConfig]]
-      if(result.nonEmpty) {
-        for(c <- result) Console.println(s"${c}")
+      if (result.nonEmpty) {
+        for (c <- result) Console.println(s"${c}")
         true
       } else {
         false
@@ -121,11 +130,11 @@ class ConsoleInterface extends Actor {
   }
 
   /**
-    * Tell the [[ElevatorDispatcher]] to call an [[Elevator]] to a floor with a motion
-    *
-    * @param params
-    * @return
-    */
+   * Tell the [[ElevatorDispatcher]] to call an [[Elevator]] to a floor with a motion
+   *
+   * @param params
+   * @return
+   */
   def doCall(params: List[String]): Boolean = {
     if (params.nonEmpty && params.size == 2) {
       try {
@@ -143,11 +152,11 @@ class ConsoleInterface extends Actor {
   }
 
   /**
-    * Tell the [[ElevatorDispatcher]] to move a specific elevator to the target floor
-    *
-    * @param params (ele
-    * @return
-    */
+   * Tell the [[ElevatorDispatcher]] to move a specific elevator to the target floor
+   *
+   * @param params (ele
+   * @return
+   */
   def doMove(params: List[String]): Boolean = {
     if (params.nonEmpty && params.size == 2) {
       try {
@@ -165,33 +174,33 @@ class ConsoleInterface extends Actor {
   }
 
   /**
-    * Tell the [[TimeStepperService]] to start automated stepping
-    *
-    * @return
-    */
+   * Tell the [[TimeStepperService]] to start automated stepping
+   *
+   * @return
+   */
   def doStartStep(): Boolean = {
     ElevatorApplication.elevatorDispatcher ! StartSteppingAutomation
     true
   }
 
   /**
-    * Tell the [[TimeStepperService]] to stop automated stepping
-    *
-    * @return
-    */
+   * Tell the [[TimeStepperService]] to stop automated stepping
+   *
+   * @return
+   */
   def doStopStep(): Boolean = {
     ElevatorApplication.elevatorDispatcher ! StopSteppingAutomation
     true
   }
 
   /**
-    * Tell the [[TimeStepperService]] to one or more steps
-    *
-    * @param params
-    * @return
-    */
+   * Tell the [[TimeStepperService]] to one or more steps
+   *
+   * @param params
+   * @return
+   */
   def doStep(params: List[String]): Boolean = {
-    if(params.nonEmpty && params.size == 1) {
+    if (params.nonEmpty && params.size == 1) {
       try {
         val count = params(0).toInt
         ElevatorApplication.elevatorDispatcher ! DoStep(count)
@@ -202,17 +211,17 @@ class ConsoleInterface extends Actor {
           false
         }
       }
-    }else {
+    } else {
       ElevatorApplication.elevatorDispatcher ! DoStep(1)
       true
     }
   }
 
   /**
-    * Print a help text to STDIN
-    *
-    * @return
-    */
+   * Print a help text to STDIN
+   *
+   * @return
+   */
   def printHelp(): Boolean = {
     Console.println(
       """Enter command:
@@ -234,11 +243,11 @@ class ConsoleInterface extends Actor {
   }
 
   /**
-    * Print unrecognized command error to STDIN
-    *
-    * @param cmd
-    * @return
-    */
+   * Print unrecognized command error to STDIN
+   *
+   * @param cmd
+   * @return
+   */
   def printUnrecognizedCommandError(cmd: String): Boolean = {
     Console.println(s"Unrecognized command: ${cmd}")
     false

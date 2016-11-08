@@ -23,28 +23,31 @@ import de.khive.examples.elevator.model.elevator._
 
 package elevatordispatcher {
 
+  /**
+   * Trait for defining an [[de.khive.examples.elevator.services.ElevatorDispatcher]] command
+   */
   sealed trait ElevatorDispatcherCommand
 
   /**
-    * Ask for a [[Seq]] of [[ElevatorConfig]] of all available [[de.khive.examples.elevator.services.Elevator]]
-    */
+   * Ask for a [[Seq]] of [[ElevatorConfig]] of all available [[de.khive.examples.elevator.services.Elevator]]
+   */
   case object GetStatus extends ElevatorDispatcherCommand
 
   /**
-    * Call the elevator to a specific floor considering the motion state.
-    *
-    * @param sourceFloor
-    * @param motion
-    */
+   * Call the elevator to a specific floor considering the motion state.
+   *
+   * @param sourceFloor
+   * @param motion
+   */
   case class CallElevator(sourceFloor: Int, motion: MotionState) extends ElevatorDispatcherCommand
 
   /**
-    * Command to send to elevator dispatcher for moving [[de.khive.examples.elevator.services.Elevator]] with given elevatorId to
-    * a targetFloor.
-    *
-    * @param elevatorId
-    * @param targetFloor
-    */
+   * Command to send to elevator dispatcher for moving [[de.khive.examples.elevator.services.Elevator]] with given elevatorId to
+   * a targetFloor.
+   *
+   * @param elevatorId
+   * @param targetFloor
+   */
   case class MoveToFloor(elevatorId: Int, targetFloor: Int) extends ElevatorDispatcherCommand
 
 }

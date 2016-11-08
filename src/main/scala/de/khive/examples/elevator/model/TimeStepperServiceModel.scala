@@ -21,9 +21,28 @@ package de.khive.examples.elevator.model
 
 package timestepper {
 
+  /**
+   * Trait to define a [[de.khive.examples.elevator.services.TimeStepperService]] command
+   */
   sealed trait TimeStepperServiceCommand
+
+  /**
+   * Case class to distribute a do step advice
+   *
+   * @param slots
+   */
   case class DoStep(slots: Int = 1) extends TimeStepperServiceCommand
+
+  /**
+   * Advice the [[de.khive.examples.elevator.services.TimeStepperService]] to start automated
+   * stepping.
+   */
   case object StartSteppingAutomation extends TimeStepperServiceCommand
+
+  /**
+   * Advice the [[de.khive.examples.elevator.services.TimeStepperService]] to stop automated
+   * stepping.
+   */
   case object StopSteppingAutomation extends TimeStepperServiceCommand
 
 }
