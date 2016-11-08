@@ -20,12 +20,10 @@
 package de.khive.examples.elevator.services
 
 import akka.actor.FSM
+import de.khive.examples.elevator.model.elevator._
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
-import scala.concurrent.duration._
-
-import de.khive.examples.elevator.model.elevator._
 
 /**
  * Finite State Machine: Elevator
@@ -36,8 +34,8 @@ class Elevator(id: Int, minLevel: Int, maxLevel: Int) extends FSM[MotionState, C
 
   val logger = LoggerFactory.getLogger(getClass)
 
-  private var upQueue = mutable.Queue[FloorRequest]()
-  private var downQueue = mutable.Queue[FloorRequest]()
+  protected var upQueue = mutable.Queue[FloorRequest]()
+  protected var downQueue = mutable.Queue[FloorRequest]()
 
   // configure the FSM
   startWith(Idle, CurrentState(0, Idle))
@@ -76,7 +74,19 @@ class Elevator(id: Int, minLevel: Int, maxLevel: Int) extends FSM[MotionState, C
     case Event(Initialize(floor), _) => stay using CurrentState(0, Idle)
     case Event(GetConfig, _) => {
       logger.info("Received GetConfig request...")
-      sender ! ElevatorConfig(id, stateData)
+      sender ! ElevatorConfig(
+        id,
+        stateData,
+        collection.immutable.Queue[FloorRequest]() ++ upQueue,
+        collection.immutable.Queue[FloorRequest]() ++ downQueue)
+      stay using stateData
+    }
+    case Event(GetUpQueue, _) => {
+      sender ! upQueue
+      stay using stateData
+    }
+    case Event(GetDownQueue, _) => {
+      sender ! downQueue
       stay using stateData
     }
     case _ => stay using stateData
@@ -93,10 +103,6 @@ class Elevator(id: Int, minLevel: Int, maxLevel: Int) extends FSM[MotionState, C
   }
 
   initialize()
-
-  // finally start queue worker schedule
-  import scala.concurrent.ExecutionContext.Implicits.global
-  context.system.scheduler.schedule(10 seconds, 5 seconds, self, NextQueue)(global)
 
   private def logTransition(transition: String): Unit = {
     log.info(s"${transition} - current floor: ${stateData.floor} UpQueue: ${upQueue} - DownQueue: ${downQueue}")

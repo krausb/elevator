@@ -18,6 +18,7 @@ resolvers ++= Seq(
 libraryDependencies ++= {
   val akkaV       = "2.4.7"
   val scalaTestV  = "3.0.0"
+  val scalaMockV  = "3.2.2"
   Seq(
     "com.typesafe.akka"           %% "akka-actor"                        % akkaV,
     "com.typesafe.akka"           %% "akka-slf4j"                        % akkaV,
@@ -33,8 +34,9 @@ libraryDependencies ++= {
 
     "org.scalacheck"              %% "scalacheck"                        % "1.13.1" % "test",
     "com.typesafe.akka"           %% "akka-testkit"                      % akkaV    % "test",
-    "org.scalactic"               %% "scalactic"                         % scalaTestV,
-    "org.scalatest"               %% "scalatest"                         % scalaTestV  % "test"
+    "org.scalactic"               %% "scalactic"                         % scalaTestV % "test",
+    "org.scalatest"               %% "scalatest"                         % scalaTestV  % "test",
+    "org.scalamock"               %% "scalamock-scalatest-support"       % scalaMockV % "test"
   )
 }
 

@@ -23,8 +23,9 @@ import akka.actor.{Actor, ActorRef, Props}
 import akka.pattern.ask
 import akka.util.Timeout
 import de.khive.examples.elevator.ElevatorApplicationConfig
-import de.khive.examples.elevator.model.elevator._
+import de.khive.examples.elevator.model.elevator.{ElevatorNotFoundException, GetConfig, _}
 import de.khive.examples.elevator.model.elevatordispatcher._
+import de.khive.examples.elevator.model.timestepper.{DoStep, StartSteppingAutomation, StopSteppingAutomation}
 import org.slf4j.LoggerFactory
 
 import scala.concurrent.Await
@@ -37,7 +38,7 @@ import scala.util.Random
  *
  * Created by ceth on 09.11.16.
  */
-class ElevatorDispatcher(config: ElevatorApplicationConfig) extends Actor {
+class ElevatorDispatcher(config: ElevatorApplicationConfig) extends Actor with ElevatorControlSystem {
 
   var log = LoggerFactory.getLogger(getClass)
 
@@ -52,21 +53,24 @@ class ElevatorDispatcher(config: ElevatorApplicationConfig) extends Actor {
     elevator
   }
 
+  val timeStepper = context.system.actorOf(Props(new TimeStepperService(self)))
+
   override def receive: Receive = {
-    case c @ CallElevatorButtonPressed(sourceFloor, motion) => {
+    case c @ CallElevator(sourceFloor, motion) => {
       log.info(s"Received ${c} ...")
       enqueueElevatorCall(sourceFloor, motion)
     }
-    case m @ MoveToFloorButtonPressed(elevatorId, targetFloor) =>
+    case m @ MoveToFloor(elevatorId, targetFloor) => {
       log.info(s"Received ${m} ...")
-      elevators.filter(e => {
-        val rFuture = e ? GetConfig
-        val result = Await.result(rFuture, timeout.duration).asInstanceOf[ElevatorConfig]
-        if (result.elevatorId == elevatorId) true else false
-      }).foreach(e => e ! EnqueueFloor(FloorRequest(targetFloor, self)))
-    case b @ BoardingNotification(elevatorId, floor) =>
+      getElevatorActorById(elevatorId).get ! EnqueueFloor(FloorRequest(targetFloor, self))
+    }
+    case b @ BoardingNotification(elevatorId, floor) => {
       log.info(s"Received ${b} ...")
       log.info(s"(BING) Boarding available for elevator ${elevatorId} on floor ${floor}")
+    }
+    case GetStatus => sender ! status()
+    case DoStep(slots) => for(s <- 0 until slots) elevators.foreach(e => e ! NextQueue)
+    case t @ (StopSteppingAutomation | StartSteppingAutomation) => timeStepper ! t
   }
 
   /**
@@ -94,7 +98,8 @@ class ElevatorDispatcher(config: ElevatorApplicationConfig) extends Actor {
     motion match {
       case _ =>
         (e) => {
-          val config = requestConfig(e)
+          val config = requestConfig(e).get
+
           log.info(s"Elevator config: ${config}")
           if (config.currentState.motion.eq(Idle) ||
             (config.currentState.motion.eq(MovingUp) && config.currentState.floor < floor) ||
@@ -111,15 +116,120 @@ class ElevatorDispatcher(config: ElevatorApplicationConfig) extends Actor {
     *
     * @param ref
     * @param timeout
-    * @return
+    * @return Option[ElevatorConfig]
     */
-  private def requestConfig(ref: ActorRef)(implicit timeout: Timeout): ElevatorConfig = {
+  private def requestConfig(ref: ActorRef)(implicit timeout: Timeout): Option[ElevatorConfig] = {
     val rFuture = ref ? GetConfig
-    Await.result(rFuture, Timeout(5 seconds).duration).asInstanceOf[ElevatorConfig]
+    try {
+        Option(Await.result(rFuture, Timeout(5 seconds).duration).asInstanceOf[ElevatorConfig])
+    } catch {
+      case e: Exception => None
+    }
   }
+
+  /**
+    * Request an [[Elevator]] by given elevatorId. Returns an [[Option]] containing the [[ActorRef]]
+    * or an empty [[Option]] if no elevator with given ID is found.
+    *
+    * @param elevatorId
+    * @return Option[ActorRef]
+    */
+  def getElevatorActorById(elevatorId: Int): Option[ActorRef] = {
+    val rest = elevators.filter(e => {
+      val config = requestConfig(e)
+      if (config.nonEmpty && config.getOrElse(None) == elevatorId) true else false
+    })
+    if(rest.nonEmpty) {
+      Option(rest(0))
+    } else {
+      None
+    }
+  }
+
+  override def status(): Seq[ElevatorConfig] = for(e <- elevators) yield requestConfig(e).get
+
+  override def update(elevatorId: Int, sourceFloor: Int, targetFloor: Int): Unit = {
+    update(elevatorId, sourceFloor)
+    update(elevatorId, targetFloor)
+  }
+
+  override def update(elevatorId: Int, targetFloor: Int): Unit = {
+    val elevatorRef = getElevatorActorById(elevatorId)
+    if(elevatorRef.nonEmpty) {
+      elevatorRef.get ! EnqueueFloor(FloorRequest(targetFloor, self))
+    } else {
+      throw new ElevatorNotFoundException(s"No elevator with ID ${elevatorId} found.")
+    }
+  }
+
+  override def pickup(floor: Int, motion: MotionState): Unit = enqueueElevatorCall(floor, motion)
+
+  override def step(slots: Int = 1): Unit = for(i <- 0 until slots) timeStepper ! DoStep
+
+  override def stopStepping(): Unit = timeStepper ! StopSteppingAutomation
+
+  override def startStepping(): Unit = timeStepper ! StartSteppingAutomation
 
 }
 
 object ElevatorDispatcher {
   val props = Props[ElevatorDispatcher]
+}
+
+/**
+  * Elevator Control System interface
+  *
+  * Created by ceth on 08.11.16.
+  */
+trait ElevatorControlSystem {
+
+  /**
+    * Get the status of all available [[Elevator]]s
+    *
+    * @return
+    */
+  def status(): Seq[ElevatorConfig]
+
+  /**
+    * Move an [[Elevator]] selected given elevatorId from sourceFloor to the targetFloor
+    *
+    * @param elevatorId
+    * @param sourceFloor
+    * @param targetFloor
+    * @throws ElevatorNotFoundException
+    */
+  def update(elevatorId: Int, sourceFloor: Int, targetFloor: Int): Unit
+
+  /**
+    * Send an [[Elevator]] given by elevatorId to targetFloor.
+    *
+    * @param elevatorId
+    * @param targetFloor
+    */
+  def update(elevatorId: Int, targetFloor: Int): Unit
+
+  /**
+    * Request an [[Elevator]] to pick the passenger up from the given floor in direction of given
+    * motion.
+    *
+    * @param floor
+    * @param motion
+    */
+  def pickup(floor: Int, motion: MotionState): Unit
+
+  /**
+    * Advice internal the [[TimeStepperService]] to do a tick into the next timeslot.
+    */
+  def step(slots: Int = 1): Unit
+
+  /**
+    * Freeze the internal [[TimeStepperService]] automation
+    */
+  def stopStepping(): Unit
+
+  /**
+    * Start the internal [[TimeStepperService]] automation
+    */
+  def startStepping(): Unit
+
 }

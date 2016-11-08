@@ -25,8 +25,26 @@ package elevatordispatcher {
 
   sealed trait ElevatorDispatcherCommand
 
-  case class CallElevatorButtonPressed(sourceFloor: Int, motion: MotionState) extends ElevatorDispatcherCommand
+  /**
+    * Ask for a [[Seq]] of [[ElevatorConfig]] of all available [[de.khive.examples.elevator.services.Elevator]]
+    */
+  case object GetStatus extends ElevatorDispatcherCommand
 
-  case class MoveToFloorButtonPressed(elevatorId: Int, targetFloor: Int) extends ElevatorDispatcherCommand
+  /**
+    * Call the elevator to a specific floor considering the motion state.
+    *
+    * @param sourceFloor
+    * @param motion
+    */
+  case class CallElevator(sourceFloor: Int, motion: MotionState) extends ElevatorDispatcherCommand
+
+  /**
+    * Command to send to elevator dispatcher for moving [[de.khive.examples.elevator.services.Elevator]] with given elevatorId to
+    * a targetFloor.
+    *
+    * @param elevatorId
+    * @param targetFloor
+    */
+  case class MoveToFloor(elevatorId: Int, targetFloor: Int) extends ElevatorDispatcherCommand
 
 }

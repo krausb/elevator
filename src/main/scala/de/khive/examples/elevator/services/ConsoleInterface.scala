@@ -19,12 +19,14 @@
 
 package de.khive.examples.elevator.services
 
-import akka.actor.{ Actor, Props }
+import akka.actor.{Actor, Props}
+import akka.pattern.ask
 import akka.util.Timeout
 import de.khive.examples.elevator.ElevatorApplication
 import de.khive.examples.elevator.model.consoleinterface._
 import de.khive.examples.elevator.model.elevator._
-import de.khive.examples.elevator.model.elevatordispatcher._
+import de.khive.examples.elevator.model.elevatordispatcher.{GetStatus, _}
+import de.khive.examples.elevator.model.timestepper.{DoStep, StartSteppingAutomation, StopSteppingAutomation}
 import org.slf4j.LoggerFactory
 
 import scala.concurrent.Await
@@ -79,30 +81,14 @@ class ConsoleInterface extends Actor {
     val cmdParts: List[String] = cmd.split(" ").toList
     try {
       cmdParts match {
-        case "call" :: rest => {
-          if (rest.nonEmpty && rest.headOption.nonEmpty) {
-            ElevatorApplication.elevatorDispatcher ! CallElevatorButtonPressed(rest(0).toString.toInt, getMotion(rest(1).toString))
-            true
-          } else {
-            false
-          }
-        }
-        case "move" :: rest => {
-          if (rest.nonEmpty && rest.size == 2) {
-            ElevatorApplication.elevatorDispatcher ! MoveToFloorButtonPressed(rest(0).toString.toInt, rest(1).toString.toInt)
-            true
-          } else {
-            false
-          }
-        }
-        case "help" :: rest => {
-          printHelp()
-          true
-        }
-        case _ => {
-          Console.println(s"Unrecognized command: ${cmd}")
-          false
-        }
+        case "startstep" :: rest => doStartStep()
+        case "stopstep" :: rest => doStopStep()
+        case "step" :: rest => doStep(rest)
+        case "status" :: rest => doStatus()
+        case "call" :: rest => doCall(rest)
+        case "move" :: rest => doMove(rest)
+        case "help" :: rest => printHelp()
+        case _ => printUnrecognizedCommandError(cmd)
       }
     } catch {
       case e: Exception => {
@@ -112,27 +98,150 @@ class ConsoleInterface extends Actor {
     }
   }
 
-  def getMotion(motionString: String): MotionState = {
-    motionString match {
-      case str if motionString == "up" => MovingUp
-      case str if motionString == "down" => MovingDown
-      case _ => throw new IllegalArgumentException(s"Illegal motion: ${motionString}")
+  /**
+    * Tell the [[ElevatorDispatcher]] to return a [[Seq]] of [[ElevatorConfig]]s of all available elevators
+    *
+    * @return
+    */
+  def doStatus(): Boolean = {
+    val rFuture = ElevatorApplication.elevatorDispatcher ? GetStatus
+    try {
+      val result = Await.result(rFuture, timeout.duration).asInstanceOf[Seq[ElevatorConfig]]
+      if(result.nonEmpty) {
+        for(c <- result) Console.println(s"${c}")
+        true
+      } else {
+        false
+      }
+    } catch {
+      case e: Exception =>
+        log.error(e.getMessage, e)
+        false
     }
   }
 
-  def printHelp(): Unit = {
+  /**
+    * Tell the [[ElevatorDispatcher]] to call an [[Elevator]] to a floor with a motion
+    *
+    * @param params
+    * @return
+    */
+  def doCall(params: List[String]): Boolean = {
+    if (params.nonEmpty && params.size == 2) {
+      try {
+        ElevatorApplication.elevatorDispatcher ! CallElevator(params(0).toString.toInt, MotionState.fromString(params(1).toString))
+        true
+      } catch {
+        case e: Exception => {
+          log.error(e.getMessage, e)
+          false
+        }
+      }
+    } else {
+      false
+    }
+  }
+
+  /**
+    * Tell the [[ElevatorDispatcher]] to move a specific elevator to the target floor
+    *
+    * @param params (ele
+    * @return
+    */
+  def doMove(params: List[String]): Boolean = {
+    if (params.nonEmpty && params.size == 2) {
+      try {
+        ElevatorApplication.elevatorDispatcher ! MoveToFloor(params(0).toString.toInt, params(1).toString.toInt)
+        true
+      } catch {
+        case e: Exception => {
+          log.error(e.getMessage, e)
+          false
+        }
+      }
+    } else {
+      false
+    }
+  }
+
+  /**
+    * Tell the [[TimeStepperService]] to start automated stepping
+    *
+    * @return
+    */
+  def doStartStep(): Boolean = {
+    ElevatorApplication.elevatorDispatcher ! StartSteppingAutomation
+    true
+  }
+
+  /**
+    * Tell the [[TimeStepperService]] to stop automated stepping
+    *
+    * @return
+    */
+  def doStopStep(): Boolean = {
+    ElevatorApplication.elevatorDispatcher ! StopSteppingAutomation
+    true
+  }
+
+  /**
+    * Tell the [[TimeStepperService]] to one or more steps
+    *
+    * @param params
+    * @return
+    */
+  def doStep(params: List[String]): Boolean = {
+    if(params.nonEmpty && params.size == 1) {
+      try {
+        val count = params(0).toInt
+        ElevatorApplication.elevatorDispatcher ! DoStep(count)
+        true
+      } catch {
+        case e: Exception => {
+          log.error(e.getMessage, e)
+          false
+        }
+      }
+    }else {
+      ElevatorApplication.elevatorDispatcher ! DoStep(1)
+      true
+    }
+  }
+
+  /**
+    * Print a help text to STDIN
+    *
+    * @return
+    */
+  def printHelp(): Boolean = {
     Console.println(
       """Enter command:
         | Possible Motions:
         | -> up
         | -> down
         | Possible Commands:
+        | -> status (get all the elevator states)
         | -> call <yourFloorNumber> <motion> (call an elevator to your floor)
         | -> move <elevatorId> <targetFloorNumber> (request to move you to a target floor)
+        | -> startstep (start automated time stepping)
+        | -> stopstep (stop automated time stepping)
+        | -> step [<stepCount>] (do steps, stepCount optional)
         | -> help (print this peace of text :-)
         | -> exit (quit elevator control!)
       """
     )
+    true
+  }
+
+  /**
+    * Print unrecognized command error to STDIN
+    *
+    * @param cmd
+    * @return
+    */
+  def printUnrecognizedCommandError(cmd: String): Boolean = {
+    Console.println(s"Unrecognized command: ${cmd}")
+    false
   }
 
 }

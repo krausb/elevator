@@ -23,6 +23,8 @@ import akka.actor.ActorRef
 
 package elevator {
 
+  import scala.collection.immutable.Queue
+
   sealed trait ElevatorCommand
 
   case class Initialize(floor: Int) extends ElevatorCommand
@@ -33,7 +35,31 @@ package elevator {
 
   case object GetConfig extends ElevatorCommand
 
+  case object GetUpQueue extends ElevatorCommand
+
+  case object GetDownQueue extends ElevatorCommand
+
   sealed trait MotionState
+
+  /**
+    * Motion state static methods
+    */
+  object MotionState {
+
+    /**
+      * Parse a given str and return a motion state
+      *
+      * @param motionString
+      * @return
+      */
+    def fromString(motionString: String): MotionState = {
+      motionString match {
+        case str if motionString.toLowerCase().startsWith("up") => MovingUp
+        case str if motionString.toLowerCase().startsWith("down") => MovingDown
+        case _ => throw new IllegalArgumentException (s"Illegal motion: ${motionString}")
+      }
+    }
+  }
 
   case object Idle extends MotionState
 
@@ -43,7 +69,7 @@ package elevator {
 
   sealed trait ElevatorData
 
-  case class ElevatorConfig(elevatorId: Int, currentState: CurrentState) extends ElevatorData
+  case class ElevatorConfig(elevatorId: Int, currentState: CurrentState, upQueue: Queue[FloorRequest], downQueue: Queue[FloorRequest]) extends ElevatorData
 
   case class CurrentState(floor: Int, motion: MotionState) extends ElevatorData
 
@@ -52,5 +78,21 @@ package elevator {
   case class BoardingNotification(elevatorId: Int, floor: Int) extends ElevatorData
 
   case class FloorRequestError(elevatorId: Int, msg: String) extends ElevatorData
+
+  /**
+    * Exception thrown in cases of requesting missing elevators
+    *
+    * @param ex
+    */
+  class ElevatorNotFoundException private(ex: RuntimeException) extends RuntimeException(ex) {
+    def this(message:String) = this(new RuntimeException(message))
+    def this(message:String, throwable: Throwable) = this(new RuntimeException(message, throwable))
+  }
+
+  object ElevatorNotFoundException {
+    def apply(message:String) = new ElevatorNotFoundException(message)
+    def apply(message:String, throwable: Throwable) = new ElevatorNotFoundException(message, throwable)
+  }
+
 
 }
