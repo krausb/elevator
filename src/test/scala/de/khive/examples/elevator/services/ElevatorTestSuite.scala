@@ -48,7 +48,6 @@ class ElevatorTestSuite extends TestKit(ActorSystem("ElevatorTestSuite")) with I
 
   "The elevator fsm" must "be initialized correctly" in {
     val fsm = TestFSMRef(new Elevator(id = 0, minLevel = 0, maxLevel = 10))
-    val probe = TestProbe()
 
     // test if elevator actor is correct typed
     val properlyTyped: TestActorRef[Elevator] = fsm
