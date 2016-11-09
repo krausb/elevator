@@ -40,4 +40,11 @@ package consoleinterface {
    */
   case object EnableConsoleInput extends ConsoleInterfaceCommand
 
+  /**
+   * Give a command line string to the [[de.khive.examples.elevator.services.ConsoleInterface]] to parse and delegate the command properly
+   *
+   * @param cmd
+   */
+  case class ParseInputCommand(cmd: String) extends ConsoleInterfaceCommand
+
 }

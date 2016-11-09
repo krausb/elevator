@@ -19,10 +19,9 @@
 
 package de.khive.examples.elevator.services
 
-import akka.actor.{ Actor, Props }
+import akka.actor.{ Actor, ActorRef, Props }
 import akka.pattern.ask
 import akka.util.Timeout
-import de.khive.examples.elevator.ElevatorApplication
 import de.khive.examples.elevator.model.consoleinterface._
 import de.khive.examples.elevator.model.elevator._
 import de.khive.examples.elevator.model.elevatordispatcher.{ GetStatus, _ }
@@ -39,7 +38,7 @@ import scala.concurrent.duration._
  *
  * Created by ceth on 09.11.16.
  */
-class ConsoleInterface extends Actor {
+class ConsoleInterface(targetActor: ActorRef) extends Actor {
 
   val log = LoggerFactory.getLogger(getClass)
 
@@ -47,6 +46,7 @@ class ConsoleInterface extends Actor {
 
   def receive: Receive = {
     case EnableConsoleInput => userInput()
+    case ParseInputCommand(cmd) => sender ! parseCommand(cmd)
     case t @ _ => {
       log.info(s"Unprocessable command: ${t}")
       ()
@@ -113,7 +113,7 @@ class ConsoleInterface extends Actor {
    * @return
    */
   def doStatus(): Boolean = {
-    val rFuture = ElevatorApplication.elevatorDispatcher ? GetStatus
+    val rFuture = targetActor ? GetStatus
     try {
       val result = Await.result(rFuture, timeout.duration).asInstanceOf[Seq[ElevatorConfig]]
       if (result.nonEmpty) {
@@ -138,7 +138,7 @@ class ConsoleInterface extends Actor {
   def doCall(params: List[String]): Boolean = {
     if (params.nonEmpty && params.size == 2) {
       try {
-        ElevatorApplication.elevatorDispatcher ! CallElevator(params(0).toString.toInt, MotionState.fromString(params(1).toString))
+        targetActor ! CallElevator(params(0).toString.toInt, MotionState.fromString(params(1).toString))
         true
       } catch {
         case e: Exception => {
@@ -160,7 +160,7 @@ class ConsoleInterface extends Actor {
   def doMove(params: List[String]): Boolean = {
     if (params.nonEmpty && params.size == 2) {
       try {
-        ElevatorApplication.elevatorDispatcher ! MoveToFloor(params(0).toString.toInt, params(1).toString.toInt)
+        targetActor ! MoveToFloor(params(0).toString.toInt, params(1).toString.toInt)
         true
       } catch {
         case e: Exception => {
@@ -179,7 +179,7 @@ class ConsoleInterface extends Actor {
    * @return
    */
   def doStartStep(): Boolean = {
-    ElevatorApplication.elevatorDispatcher ! StartSteppingAutomation
+    targetActor ! StartSteppingAutomation
     true
   }
 
@@ -189,7 +189,7 @@ class ConsoleInterface extends Actor {
    * @return
    */
   def doStopStep(): Boolean = {
-    ElevatorApplication.elevatorDispatcher ! StopSteppingAutomation
+    targetActor ! StopSteppingAutomation
     true
   }
 
@@ -203,7 +203,7 @@ class ConsoleInterface extends Actor {
     if (params.nonEmpty && params.size == 1) {
       try {
         val count = params(0).toInt
-        ElevatorApplication.elevatorDispatcher ! DoStep(count)
+        targetActor ! DoStep(count)
         true
       } catch {
         case e: Exception => {
@@ -212,7 +212,7 @@ class ConsoleInterface extends Actor {
         }
       }
     } else {
-      ElevatorApplication.elevatorDispatcher ! DoStep(1)
+      targetActor ! DoStep(1)
       true
     }
   }

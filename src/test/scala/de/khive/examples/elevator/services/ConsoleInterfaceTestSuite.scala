@@ -22,33 +22,48 @@ package de.khive.examples.elevator.services
 import akka.actor.ActorSystem
 import akka.testkit.{ ImplicitSender, TestActorRef, TestKit, TestProbe }
 import akka.util.Timeout
-import de.khive.examples.elevator.ElevatorApplicationConfig
-import org.scalatest.{ BeforeAndAfter, BeforeAndAfterAll, FlatSpecLike, MustMatchers }
+import org.scalactic.source.Position
+import org.scalatest.{ BeforeAndAfter, FlatSpecLike, MustMatchers }
 
 import scala.concurrent.duration._
 
 /**
- * Unit Testing Suite for [[ElevatorDispatcher]]
+ * Unit Test Suite for [[ConsoleInterface]]
  *
  * Created by ceth on 08.11.16.
  */
-class ElevatorDispatcherTestSuite extends TestKit(ActorSystem("ElevatorDispatcherTestSuite")) with ImplicitSender with FlatSpecLike
-    with MustMatchers with BeforeAndAfter with BeforeAndAfterAll {
-
-  val dispatcher = TestActorRef[ElevatorDispatcher](new ElevatorDispatcher(ElevatorApplicationConfig(10, 1)))
+class ConsoleInterfaceTestSuite extends TestKit(ActorSystem("ConsoleInterfaceTestSuite")) with ImplicitSender with FlatSpecLike
+    with MustMatchers with BeforeAndAfter {
 
   implicit val timeout = Timeout(5 seconds)
-
   val probe = TestProbe()
+  val consoleInterface = TestActorRef[ConsoleInterface](new ConsoleInterface(probe.ref))
 
-  override def afterAll: Unit = {
+  val testScenario: Map[String, Boolean] = Map(
+    ("startstep", true),
+    ("stopstep", true),
+    ("step", true),
+    ("step 3", true),
+    ("call 3 up", true),
+    ("call 6 down", true),
+    ("move 0 4", true),
+    ("help", true),
+    ("call 3", false),
+    ("call down", false),
+    ("move 0", false)
+  )
+
+  override protected def after(fun: => Any)(implicit pos: Position): Unit = {
     TestKit.shutdownActorSystem(system)
+    super.after(fun)
   }
 
-  "The ElevatorDispatcher" should "initialize properly" in {
-    val properlyTyped: TestActorRef[ElevatorDispatcher] = dispatcher
+  "The ConsoleInterface" should "parse the command list properly and return the correct results" in {
 
-    assert(dispatcher.underlyingActor.elevators.size == 1)
+    for (testCase <- testScenario) {
+      assert(consoleInterface.underlyingActor.parseCommand(testCase._1) == testCase._2)
+    }
+
   }
 
 }

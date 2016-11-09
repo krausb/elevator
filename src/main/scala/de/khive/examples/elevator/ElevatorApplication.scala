@@ -40,6 +40,6 @@ object ElevatorApplication extends App {
   val system = ActorSystem("example-elevator")
 
   lazy val elevatorDispatcher = system.actorOf(Props(new ElevatorDispatcher(config)))
-  lazy val consoleInterface = system.actorOf(ConsoleInterface.props)
+  lazy val consoleInterface = system.actorOf(Props(new ConsoleInterface(elevatorDispatcher)))
   consoleInterface ! EnableConsoleInput
 }
