@@ -48,7 +48,7 @@ class TimeStepperService(delegate: ActorRef) extends Actor {
     }
     case StartSteppingAutomation => {
       if (scheduleRef.isEmpty) {
-        scheduleRef = Option(context.system.scheduler.schedule(10 seconds, 5 seconds, delegate, DoStep(1))(global))
+        scheduleRef = Option(context.system.scheduler.schedule(0 seconds, 5 seconds, delegate, DoStep(1))(global))
         log.info("Stepper started!")
       }
     }
