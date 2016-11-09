@@ -75,3 +75,6 @@ wartremover.wartremoverErrors in (Compile, compile) ++= Seq(
 )
 
 incOptions := incOptions.value.withNameHashing(true)
+
+mainClass in assembly := Some("de.khive.examples.elevator.ElevatorApplication")
+test in assembly := {}

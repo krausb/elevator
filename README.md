@@ -67,8 +67,13 @@ The Application uses SBT 0.13.13 for management. To compile the project use the 
 sbt clean compile
 ```
 
-Run the Application
-===================
+After the compilation is finished successfully you have to assembly the application into a fat-JAR:
+```
+sbt assembly
+```
+
+Run the Application Assembly
+============================
 
 ```
 Usage: example-elevator [options]
@@ -82,7 +87,7 @@ Usage: example-elevator [options]
 Starting the application with "java -jar ..." and passing configuration params on commandline:
 
 ```
-&> java -jar example-elevator-<VERSION>.jar de.khive.examples.elevator.ElevatorApplication -f <floor_count> -e <elevator_count>
+&> java -jar example-elevator-assembly-<VERSION>.jar -f <floor_count> -e <elevator_count>
 ```
 
 Use Case: Run application from commandline as an unix service
